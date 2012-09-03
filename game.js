@@ -13,7 +13,7 @@ var PLAYER = 1;
 var BLOCK = 2;
 var FINISH = 3;
 var cellSize = 40;
-var slideSpeed = 10; //blocks per second
+var slideSpeed = 20; //blocks per second
 
 /*
  * A basic object that stores location and size
@@ -47,7 +47,7 @@ BaseObject.prototype.reset = function() {
  * Update the object's location based on how much time has passed
  * and the speed and direction the object is going.
  */
-BaseObject.prototype.update = function(state, tdelt) {
+BaseObject.prototype.update = function(level, tdelt) {
     this.x += this.dc*slideSpeed*cellSize*tdelt/1000;
     this.y += this.dr*slideSpeed*cellSize*tdelt/1000;
     var cornerX = this.x + (this.dc < 0 ? cellSize : 0);
@@ -58,8 +58,10 @@ BaseObject.prototype.update = function(state, tdelt) {
     var row = Math.floor(cornerY/cellSize);
     this.row = row;
     this.col = col;
+    var cols = level.map.cols;
+    var rows = level.map.rows;
     // Reset the object if it has gone off the screen
-    if (col >= state.map.cols || col < 0 || row >= state.map.rows || row < 0){
+    if (col >= cols || col < 0 || row >= rows || row < 0){
         this.reset();
     }
     /* If the object is a player, check if the block it's about to hit is
@@ -67,9 +69,11 @@ BaseObject.prototype.update = function(state, tdelt) {
     if(this instanceof PlayerObj){
         var nextRow = this.row + this.dr;
         var nextCol = this.col + this.dc;
-        var nBlock = state.map.grid[nextRow][nextCol];
-        if(nBlock !== undefined && nBlock.type === BLOCK){
-            nBlock.playerInteract(this);
+        if(nextRow >= 0 && nextRow < rows && nextCol >= 0 && nextCol < cols) {
+            var nBlock = level.map.grid[nextRow][nextCol];
+            if(nBlock !== undefined && nBlock.type === BLOCK){
+                nBlock.playerInteract(this);
+            }
         }
     }
 };
@@ -134,14 +138,55 @@ function GameMap(rows, cols){
     }
 }
 
+/*
+ * Takes a level and a pattern and creates objects for that level
+ * which match the pattern.
+ * The pattern is a list of rows, where each row is a string of
+ * 1 digit integers. Each integer corresponds to a player, block, or
+ * empty space.
+ * ex:
+ ["1002",    This pattern corresponds to a map with 3 rows and 4 cols.
+  "0300",    The player starts at the top left, and there are 2 blocks
+  "0020"]    and an exit.
+ */
+function importPattern(level, pattern) {
+    var row = 0;
+    var col = 0;
+    if(pattern.length !== level.map.rows || 
+       pattern[0].length !== level.map.cols){
+        console.log("Pattern doesn't match grid size");
+        return;
+    }
+    for (row = 0; row < pattern.length; row++) {
+        rowStr = pattern[row];
+        for(col = 0; col < rowStr.length; col++) {
+            switch(parseInt(rowStr[col])){
+                case EMPTY:
+                    level.addObject(new BaseObject(row, col, cellSize, cellSize), level);
+                    break;
+                case PLAYER:
+                    level.addObject(new PlayerObj(row, col, cellSize, cellSize), level);
+                    break;
+                case FINISH:
+                    break;
+                case BLOCK:
+                    level.addObject(new BlockObj(row, col, cellSize, cellSize), level);
+                    break;
+            }
+        }
+    }
+}
+
 
 /*
- * Stores the whole of the game state. This includes the game map,
+ * A level which takes a timerDelay, rows, cols,
+ * and a pattern which describes the layout of the level.
+ * This includes the game map,
  * lists of players and blocks, and some functions for game control.
  * Note that the players/blocks are stored in 2 data types: lists
  * of each respective object and a grid with their locations.
  */
-function GameState(timerDelay, rows, cols) {
+function GameLevel(timerDelay, rows, cols, pattern) {
     this.map = new GameMap(rows, cols);
     this.timerDelay = timerDelay;
     // The types of objects stored in the game state
@@ -153,48 +198,47 @@ function GameState(timerDelay, rows, cols) {
     this.blocks = new Array();
     /* Add an object to the game state by putting it in
        the correct list and adding it to the grid */
-    this.addObject = function(object) {
+    this.addObject = function(object, self) {
+        if (self === undefined)
+            self = this;
         switch(object.type) {
             case PLAYER:
-                this.players.push(object);
+                self.players.push(object);
                 break;
             case BLOCK:
-                this.blocks.push(object);
+                self.blocks.push(object);
                 break;
             case FINISH:
-                this.blocks.push(object);
+                self.blocks.push(object);
+                break;
+            case EMPTY:
                 break;
             default:
                 console.log("Invalid object type");
                 return;
         }
-        this.map.grid[object.row][object.col] = object;
-    }
+        self.map.grid[object.row][object.col] = object;
+    };
+    importPattern(this, pattern);
     /* Clears the canvas and redraws all the objects */
-    this.redrawAll = function(state) {
+    this.redrawAll = function() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        for(var i = 0; i < state.objTypes.length; i++){
-            var objs = state[state.objTypes[i]];
+        for(var i = 0; i < this.objTypes.length; i++){
+            var objs = this[this.objTypes[i]];
             for(var j = 0; j < objs.length; j++){
                 objs[j].drawFn();
             }
         }
     };
     /* Calls the update function on all the objects */
-    this.updateAll = function(state) {
-        var tdelt = state.timerDelay;
-        for(var i = 0; i < state.objTypes.length; i++){
-            var objs = state[state.objTypes[i]];
+    this.updateAll = function() {
+        var tdelt = this.timerDelay;
+        for(var i = 0; i < this.objTypes.length; i++){
+            var objs = this[this.objTypes[i]];
             for(var j = 0; j < objs.length; j++){
-                objs[j].update(state, tdelt);
+                objs[j].update(this, tdelt);
             }
         }
-    };
-    var state = this;
-    /* Starts the game by setting up the update/redraw intervals */
-    this.startGame = function() {
-        this.upInt = setInterval(function(){state.updateAll(state)}, state.timerDelay);
-        this.drawInt = setInterval(function(){state.redrawAll(state)}, state.timerDelay);
     };
     /* If the player is not moving, change the player's speed/direction */
     this.keyPress = function(code) {
@@ -217,10 +261,6 @@ function GameState(timerDelay, rows, cols) {
             case dCode:
                 dr = 1;
                 break;
-//            default:
-//                clearInterval(this.upInt);
-//                clearInterval(this.drawInt);
-//                return;
         }
         var player;
         for (var i = 0; i < this.players.length; i++){
@@ -231,6 +271,44 @@ function GameState(timerDelay, rows, cols) {
             }
         }
     };
+};
+
+
+/*
+ * Stores the whole of the game state. 
+ * This has all the levels and functions to call their timer functions.
+ */
+function GameState(timerDelay) {
+    this.timerDelay = timerDelay;
+    this.curLevel = -1;
+    this.levels = new Array();
+    this.addLevel = function(rows, cols, pattern) {
+        this.levels.push(new GameLevel(this.timerDelay, rows, cols, pattern));
+    };
+    /* Clears the canvas and redraws all the objects */
+    this.redrawAll = function(state) {
+        if(this.curLevel === -1)
+            return;
+        this.levels[this.curLevel].redrawAll(state);
+    };
+    /* Calls the update function on all the objects */
+    this.updateAll = function(state) {
+        if(this.curLevel === -1)
+            return;
+        this.levels[this.curLevel].updateAll(state);
+    };
+    var state = this;
+    /* Starts the game by setting up the update/redraw intervals */
+    this.startGame = function() {
+        this.curLevel = 0;
+        this.upInt = setInterval(function(){state.updateAll(state)}, state.timerDelay);
+        this.drawInt = setInterval(function(){state.redrawAll(state)}, state.timerDelay);
+    };
+    this.keyPress = function(code) {
+        if(this.curLevel === -1)
+            return;
+        this.levels[this.curLevel].keyPress(code);
+    }
 }
 
 function onKeyDown(event) {
@@ -238,14 +316,21 @@ function onKeyDown(event) {
 }
 
 
-// Create a new state and add objects
-state = new GameState(10, 15, 20);
-state.addObject(new PlayerObj(1, 1, cellSize, cellSize));
-state.addObject(new BlockObj(1, 5, cellSize, cellSize));
-state.addObject(new BlockObj(1, 0, cellSize, cellSize));
-state.addObject(new BlockObj(0, 1, cellSize, cellSize));
-state.addObject(new BlockObj(5, 1, cellSize, cellSize));
+// Create a new state and add level
+state = new GameState(10);
+state.addLevel(15, 20, ["00200000000000000000",
+                        "02100200000000000000",
+                        "00000000000000000000",
+                        "00000000020200000000",
+                        "00200000000000000000",
+                        "00000000000200000000",
+                        "00000000000000000000",
+                        "00000002002000000000",
+                        "00000000000000000000",
+                        "00002002000000000000",
+                        "00000000000000000000",
+                        "00002000000000000000",
+                        "00000000000000000000",
+                        "00000000000000000000",
+                        "00000000220000000000"]);
 state.startGame();
-
-
-
