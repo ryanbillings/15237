@@ -23,17 +23,14 @@ BaseObject.prototype.drawFn = function() {
   ctx.fillRect(this.x, this.y, this.width, this.height);
 };
 BaseObject.prototype.update = function(state, tdelt) {
-  var oldX = this.x;
-  var oldY = this.y;
-  this.x = oldX + this.dc*slideSpeed*cellSize*tdelt/1000;
-  this.y = oldY + this.dr*slideSpeed*cellSize*tdelt/1000;
-  var absX = Math.abs(this.x);
-  var absY = Math.abs(this.y);
+  this.x += this.dc*slideSpeed*cellSize*tdelt/1000;
+  this.y += this.dr*slideSpeed*cellSize*tdelt/1000;
+  var cornerX = Math.abs(this.x) + (this.dc < 0 ? cellSize : 0);
+  var cornerY = Math.abs(this.y) + (this.dr < 0 ? cellSize : 0);
   var xSign = this.x > 0 ? 1 : -1;
   var ySign = this.y > 0 ? 1 : -1;
-  col = Math.floor(absX/cellSize)*xSign;
-  row = Math.floor(absY/cellSize)*ySign;
-  console.log(col + ' ' + this.x);
+  var col = Math.floor(cornerX/cellSize)*xSign;
+  var row = Math.floor(cornerY/cellSize)*ySign;
   this.row = row;
   this.col = col;
   if (col > state.map.cols || col < 0 || row > state.map.rows || row < 0){
@@ -189,12 +186,11 @@ function onKeyDown(event) {
 
 
 state = new GameState(10, 15, 20);
-var obj = new PlayerObj(0, 1, cellSize, cellSize);
-var obj2 = new BlockObj(0, 5, cellSize, cellSize);
-var obj3 = new BlockObj(0, 0, cellSize, cellSize);
-state.addObject(obj);
-state.addObject(obj2);
-state.addObject(obj3);
+state.addObject(new PlayerObj(1, 1, cellSize, cellSize));
+state.addObject(new BlockObj(1, 5, cellSize, cellSize));
+state.addObject(new BlockObj(1, 0, cellSize, cellSize));
+state.addObject(new BlockObj(0, 1, cellSize, cellSize));
+state.addObject(new BlockObj(5, 1, cellSize, cellSize));
 canvas.setAttribute('tabindex', '0');
 canvas.focus();
 canvas.addEventListener('keydown', onKeyDown, false);
