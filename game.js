@@ -89,8 +89,155 @@ PlayerObj.prototype = new BaseObject();
 PlayerObj.prototype.constructor = PlayerObj;
 PlayerObj.prototype.type = PLAYER;
 PlayerObj.prototype.drawFn = function(){
-    ctx.fillStyle = "red";
-    ctx.fillRect(this.x, this.y, this.width, this.height);
+    /*ctx.fillStyle = "red";
+    ctx.fillRect(this.x, this.y, this.width, this.height);*/
+    // Orange
+    ctx.fillStyle = "#FE9802";
+    
+    
+    function circle(ctx, cx, cy, radius) {
+        ctx.fillStyle = "white";
+        ctx.strokeStyle = "black";
+        ctx.beginPath();
+        ctx.arc(cx, cy+5, radius, 0, 2*Math.PI, true);
+        ctx.fill();
+        ctx.stroke();
+        ctx.closePath();
+    }
+    
+    function head(ctx, cx, cy, height, width) {
+        ctx.fillStyle = "black";
+        ctx.beginPath();
+        //ctx.moveTo(cx, cy+height/2-10);
+        ctx.arc(cx+width/2, cy + 12, height/3, 0, 2*Math.PI, true);
+        //ctx.quadraticCurveTo(cx+width/2,cy-20,cx+width, cy+height/2)
+        //ctx.bezierCurveTo(cx+width/4-4, cy-6, cx+(3*width)/4+4, cy-6, cx+width, cy+height/2);
+        ctx.stroke();
+        ctx.fill();
+        ctx.closePath();
+    }
+    
+    function eyes(ctx, cx, cy, width){
+        ctx.fillStyle = "white";
+        // Left Eye
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.scale(.9, 1);
+        ctx.translate(-cx, -cy);
+        ctx.beginPath();
+        ctx.arc(cx+18, cy+10, 4, 0, Math.PI*2, false);
+        ctx.fill();
+        ctx.closePath();
+        ctx.restore();
+        
+        ctx.fillStyle = "black";
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.scale(.9, 1);
+        ctx.translate(-cx, -cy);
+        ctx.beginPath();
+        ctx.arc(cx+18, cy+10, 2, 0, Math.PI*2, false);
+        ctx.fill();
+        ctx.closePath();
+        ctx.restore();
+        
+        ctx.fillStyle = "white";
+        // Right eye
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.scale(.9, 1);
+        ctx.translate(-cx, -cy);
+        ctx.beginPath();
+        ctx.arc(cx+27, cy+10, 4, 0, Math.PI*2, false);
+        ctx.fill();
+        ctx.closePath();
+        ctx.restore();
+        
+        ctx.fillStyle = "black";
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.scale(.9, 1);
+        ctx.translate(-cx, -cy);
+        ctx.beginPath();
+        ctx.arc(cx+27, cy+10, 2, 0, Math.PI*2, false);
+        ctx.fill();
+        ctx.closePath();
+        ctx.restore();
+    }
+    
+    function triangle(ctx, cx, cy){
+        ctx.fillStyle = "#FE9802";
+        ctx.beginPath();
+        ctx.moveTo(cx+10,cy+10);
+        ctx.lineTo(cx+15,cy+15);
+        ctx.lineTo(cx+20,cy+10);
+        ctx.lineTo(cx+10,cy+10);
+        ctx.fill();
+        ctx.closePath();
+    }
+    
+    function feet(ctx, cx, cy){
+        ctx.fillStyle = "#FE9802";
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.scale(.8, 1);
+        ctx.translate(-cx, -cy);
+        ctx.beginPath();
+        ctx.arc(cx+18, cy+35, 5, 0, Math.PI*2, false);
+        ctx.fill();
+        ctx.arc(cx+30, cy+35, 5, 0, Math.PI*2, false);
+        ctx.fill();
+        ctx.closePath();
+        ctx.restore();
+    }
+    
+    function arms(ctx, cx, cy){
+        ctx.fillStyle = "black";
+        ctx.strokeStyle = "white";
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.rotate(3*(Math.PI/4));
+        ctx.scale(.7, 1);
+        ctx.translate(-cx, -cy);
+        ctx.beginPath();
+        ctx.arc(cx-12, cy-40, 7, 0, Math.PI*2, false);
+        ctx.fill();
+        //ctx.stroke();
+        ctx.closePath();
+        ctx.restore();
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.rotate(Math.PI/4);
+        ctx.scale(.7, 1);
+        ctx.translate(-cx, -cy);
+        ctx.beginPath();
+        ctx.arc(cx+30, cy+11, 7, 0, Math.PI*2, false);
+        ctx.fill();
+        //ctx.stroke();
+        ctx.closePath();
+        ctx.restore();
+    }
+    head(ctx, this.x, this.y, this.height, this.width);
+    circle(ctx, this.x+this.width/2, this.y+this.width/2, this.width/2-10);
+    
+    triangle(ctx, this.x+5, this.y+5);
+    eyes(ctx, this.x, this.y);
+    feet(ctx, this.x, this.y);
+    arms(ctx, this.x, this.y);
+    //roundedRect(ctx, this.x+10, this.y+10, this.width/4, this.height/6, 3);
+    function roundedRect(ctx,x,y,width,height,radius){
+          ctx.beginPath();
+          ctx.moveTo(x,y+radius);
+          ctx.lineTo(x,y+height-radius);
+          ctx.quadraticCurveTo(x,y+height,x+radius,y+height);
+          ctx.lineTo(x+width-radius,y+height);
+          ctx.quadraticCurveTo(x+width,y+height,x+width,y+height-radius);
+          ctx.lineTo(x+width,y+radius);
+          ctx.quadraticCurveTo(x+width,y,x+width-radius,y);
+          ctx.lineTo(x+radius,y);
+          ctx.quadraticCurveTo(x,y,x,y+radius);
+          ctx.fill();
+    }
 };
 
 /*
@@ -223,6 +370,8 @@ function GameLevel(timerDelay, rows, cols, pattern) {
     /* Clears the canvas and redraws all the objects */
     this.redrawAll = function() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "rgb(193,251,255)";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
         for(var i = 0; i < this.objTypes.length; i++){
             var objs = this[this.objTypes[i]];
             for(var j = 0; j < objs.length; j++){
