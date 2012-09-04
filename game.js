@@ -13,6 +13,7 @@ var PLAYER = 1;
 var BLOCK = 2;
 var FINISH = 3;
 var PORTAL = 4;
+var BOMB = 5;
 var cellSize = 40;
 var slideSpeed = 20; //blocks per second
 var topbarSize = 50;
@@ -81,7 +82,7 @@ BaseObject.prototype.update = function(state, tdelt) {
         var nextCol = this.col + this.dc;
         if(nextRow >= 0 && nextRow < rows && nextCol >= 0 && nextCol < cols) {
             var nBlock = level.map.grid[nextRow][nextCol];
-            if(nBlock !== undefined && (nBlock.type === BLOCK || nBlock.type === PORTAL)){
+            if(nBlock !== undefined && (nBlock.type === BLOCK || nBlock.type === PORTAL || nBlock.type === BOMB)){
                 nBlock.playerInteract(this);
             }
         }
@@ -279,6 +280,38 @@ PortalObj.prototype.playerInteract = function(player){
 };
 
 
+function BombObj(row, col, width, height){
+    BaseObject.call(this, row, col, width, height);
+}
+BombObj.prototype = new BaseObject();
+BombObj.prototype.constructor = BombObj;
+BombObj.prototype.type = BOMB;
+BombObj.prototype.drawFn = function(){
+    ctx.fillStyle = "black";
+    ctx.beginPath();
+    ctx.arc(this.x+cellSize/2, this.y+topbarSize+cellSize/2, this.width/2, 0, 2*Math.PI, true);
+    ctx.fill();
+    ctx.closePath();
+};
+BombObj.prototype.explode = function(){
+    ctx.fillStyle = "red";
+    ctx.beginPath();
+    ctx.arc(this.x+cellSize/2, this.y+topbarSize+cellSize/2, this.width/2, 0, 2*Math.PI, true);
+    ctx.fill();
+    ctx.closePath();
+}
+/* This kills the player */
+BombObj.prototype.playerInteract = function(player){
+    player.x = player.cow+(player.dc * cellSize);
+    player.y = player.row+(player.dr * cellSize);
+    player.dr = 0;
+    player.dc = 0;
+    this.explode();
+    lives--;
+    this.reset();
+};
+
+
 /*
  * A generic block (inherits from BaseObject)
  * It has a different type and draw function.
@@ -365,6 +398,9 @@ function importPattern(level, pattern) {
                 case BLOCK:
                     level.addObject(new BlockObj(row, col, cellSize, cellSize), level);
                     break;
+                case BOMB:
+                    level.addObject(new BombObj(row, col, cellSize, cellSize), level);
+                    break;
                 default:
                     var id = rowStr[col];
                     var obj = new PortalObj(id, row, col, cellSize, cellSize);
@@ -418,6 +454,7 @@ function GameLevel(timerDelay, rows, cols, pattern) {
             case BLOCK:
             case FINISH:
             case PORTAL:
+            case BOMB:
                 self.blocks.push(object);
                 break;
             case EMPTY:
@@ -579,7 +616,7 @@ state = new GameState(10);
                                 "00200000000000000000",
                                 "0000000000020000000b",
                                 "00000000000000000000",
-                                "000000020020000000b0",
+                                "000000025020000000b0",
                                 "00000000000000000000",
                                 "00002002000000000000",
                                 "00000000000000000000",
