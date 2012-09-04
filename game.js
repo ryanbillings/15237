@@ -47,7 +47,7 @@ BaseObject.prototype.reset = function() {
  * Update the object's location based on how much time has passed
  * and the speed and direction the object is going.
  */
-BaseObject.prototype.update = function(level, tdelt) {
+BaseObject.prototype.update = function(state, tdelt) {
     this.x += this.dc*slideSpeed*cellSize*tdelt/1000;
     this.y += this.dr*slideSpeed*cellSize*tdelt/1000;
     var cornerX = this.x + (this.dc < 0 ? cellSize : 0);
@@ -58,6 +58,7 @@ BaseObject.prototype.update = function(level, tdelt) {
     var row = Math.floor(cornerY/cellSize);
     this.row = row;
     this.col = col;
+    var level = state.levels[state.curLevel];
     var cols = level.map.cols;
     var rows = level.map.rows;
     // Reset the object if it has gone off the screen
@@ -67,6 +68,11 @@ BaseObject.prototype.update = function(level, tdelt) {
     /* If the object is a player, check if the block it's about to hit is
        a block. If it is, interact with that block */
     if(this instanceof PlayerObj){
+        if(row >= 0 && row < rows && col >= 0 && col < cols &&
+           level.map.grid[row][col].type === FINISH) {
+           level.map.grid[row][col].playerInteract(state);
+           return;
+        }
         var nextRow = this.row + this.dr;
         var nextCol = this.col + this.dc;
         if(nextRow >= 0 && nextRow < rows && nextCol >= 0 && nextCol < cols) {
@@ -264,6 +270,31 @@ BlockObj.prototype.playerInteract = function(player){
     player.y = player.row*cellSize;
 };
 
+/*
+ * A generic block (inherits from BaseObject)
+ * It has a different type and draw function.
+ * Additionally, it has a playerInteract function
+ * which is called if a player "hits" it.
+ */
+function FinishObj(row, col, width, height){
+    BaseObject.call(this, row, col, width, height);
+}
+FinishObj.prototype = new BaseObject();
+FinishObj.prototype.constructor = FinishObj;
+FinishObj.prototype.type = FINISH;
+FinishObj.prototype.drawFn = function(){
+    ctx.fillStyle = "green";
+    ctx.fillRect(this.x, this.y, this.width, this.height);
+};
+/* This stops the player */
+FinishObj.prototype.playerInteract = function(state){
+    state.curLevel++;
+    player.dr = 0;
+    player.dc = 0;
+    player.x = player.col*cellSize;
+    player.y = player.row*cellSize;
+};
+
 
 /*
  * A very basic map that stores references to all the objects
@@ -315,6 +346,7 @@ function importPattern(level, pattern) {
                     level.addObject(new PlayerObj(row, col, cellSize, cellSize), level);
                     break;
                 case FINISH:
+                    level.addObject(new FinishObj(row, col, cellSize, cellSize), level);
                     break;
                 case BLOCK:
                     level.addObject(new BlockObj(row, col, cellSize, cellSize), level);
@@ -380,12 +412,12 @@ function GameLevel(timerDelay, rows, cols, pattern) {
         }
     };
     /* Calls the update function on all the objects */
-    this.updateAll = function() {
+    this.updateAll = function(state) {
         var tdelt = this.timerDelay;
         for(var i = 0; i < this.objTypes.length; i++){
             var objs = this[this.objTypes[i]];
             for(var j = 0; j < objs.length; j++){
-                objs[j].update(this, tdelt);
+                objs[j].update(state, tdelt);
             }
         }
     };
@@ -480,6 +512,36 @@ state.addLevel(15, 20, ["00200000000000000000",
                         "00000000000000000000",
                         "00002000000000000000",
                         "00000000000000000000",
+                        "00000000000000000003",
+                        "00000000220000000000"]);
+state.addLevel(15, 20, ["22200000000000000000",
+                        "02010200000000000000",
                         "00000000000000000000",
+                        "00000000020200000000",
+                        "00200000000000000000",
+                        "00000000000200000000",
+                        "00000000000000000000",
+                        "00000002002000000000",
+                        "00000000000000000000",
+                        "00002002000000000000",
+                        "00000000000000000000",
+                        "00002000000000000000",
+                        "00000000000000000000",
+                        "00000000000000000030",
+                        "00000000220000000000"]);
+state.addLevel(15, 20, ["22200000000000000000",
+                        "02010200000000000000",
+                        "00000000001000000000",
+                        "00000000020200000000",
+                        "00200000000000000000",
+                        "00000000000200000000",
+                        "00000000000000000000",
+                        "00000002002000000000",
+                        "00000000000000000000",
+                        "00002002000000000000",
+                        "00000000000000000000",
+                        "00002000000000000000",
+                        "00000000000000000000",
+                        "00000000000000000030",
                         "00000000220000000000"]);
 state.startGame();
