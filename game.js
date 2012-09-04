@@ -17,7 +17,7 @@ var BOMB = 5;
 var cellSize = 40;
 var slideSpeed = 20; //blocks per second
 var topbarSize = 50;
-var lives = 1;
+var lives = 3;
 
 /*
  * A basic object that stores location and size
@@ -287,26 +287,22 @@ BombObj.prototype = new BaseObject();
 BombObj.prototype.constructor = BombObj;
 BombObj.prototype.type = BOMB;
 BombObj.prototype.drawFn = function(){
-    ctx.fillStyle = "black";
+    if(lives >= 0){
+        ctx.fillStyle = "black";
+    }else{
+        ctx.fillStyle = "red";
+    }
     ctx.beginPath();
     ctx.arc(this.x+cellSize/2, this.y+topbarSize+cellSize/2, this.width/2, 0, 2*Math.PI, true);
     ctx.fill();
     ctx.closePath();
 };
-BombObj.prototype.explode = function(){
-    ctx.fillStyle = "red";
-    ctx.beginPath();
-    ctx.arc(this.x+cellSize/2, this.y+topbarSize+cellSize/2, this.width/2, 0, 2*Math.PI, true);
-    ctx.fill();
-    ctx.closePath();
-}
 /* This kills the player */
 BombObj.prototype.playerInteract = function(player){
-    player.x = player.cow+(player.dc * cellSize);
-    player.y = player.row+(player.dr * cellSize);
+    player.x = player.startCol*cellSize;
+    player.y = player.startRow*cellSize;
     player.dr = 0;
     player.dc = 0;
-    this.explode();
     lives--;
     this.reset();
 };
@@ -591,7 +587,7 @@ function endGame(){
 
 /* Function to continue the game after death */
 function continueGame(event){
-    lives = 1;
+    lives = 3;
     clearInterval(state.upInt);
     clearInterval(state.drawInt);
     canvas.removeEventListener('keydown', continueGame);
