@@ -15,6 +15,8 @@ var FINISH = 3;
 var PORTAL = 4;
 var cellSize = 40;
 var slideSpeed = 20; //blocks per second
+var topbarSize = 50;
+var lives = 1;
 
 /*
  * A basic object that stores location and size
@@ -34,7 +36,7 @@ function BaseObject(row, col, width, height){
 }
 BaseObject.prototype.type = EMPTY;
 BaseObject.prototype.drawFn = function() {
-    ctx.fillRect(this.x, this.y, this.width, this.height);
+    ctx.fillRect(this.x, this.y + topbarSize, this.width, this.height);
 };
 BaseObject.prototype.reset = function() {
     this.row = this.startRow;
@@ -64,6 +66,7 @@ BaseObject.prototype.update = function(state, tdelt) {
     var rows = level.map.rows;
     // Reset the object if it has gone off the screen
     if (col >= cols || col < 0 || row >= rows || row < 0){
+        lives--;
         this.reset();
     }
     /* If the object is a player, check if the block it's about to hit is
@@ -96,13 +99,8 @@ PlayerObj.prototype = new BaseObject();
 PlayerObj.prototype.constructor = PlayerObj;
 PlayerObj.prototype.type = PLAYER;
 PlayerObj.prototype.drawFn = function(){
-    /*ctx.fillStyle = "red";
-    ctx.fillRect(this.x, this.y, this.width, this.height);*/
-    // Orange
-    ctx.fillStyle = "#FE9802";
-    
-    
-    function circle(ctx, cx, cy, radius) {
+    var adjustedY = this.y + topbarSize;
+    function body(ctx, cx, cy, radius) {
         ctx.fillStyle = "white";
         ctx.strokeStyle = "black";
         ctx.beginPath();
@@ -115,10 +113,7 @@ PlayerObj.prototype.drawFn = function(){
     function head(ctx, cx, cy, height, width) {
         ctx.fillStyle = "black";
         ctx.beginPath();
-        //ctx.moveTo(cx, cy+height/2-10);
         ctx.arc(cx+width/2, cy + 12, height/3, 0, 2*Math.PI, true);
-        //ctx.quadraticCurveTo(cx+width/2,cy-20,cx+width, cy+height/2)
-        //ctx.bezierCurveTo(cx+width/4-4, cy-6, cx+(3*width)/4+4, cy-6, cx+width, cy+height/2);
         ctx.stroke();
         ctx.fill();
         ctx.closePath();
@@ -172,7 +167,7 @@ PlayerObj.prototype.drawFn = function(){
         ctx.restore();
     }
     
-    function triangle(ctx, cx, cy){
+    function nose(ctx, cx, cy){
         ctx.fillStyle = "#FE9802";
         ctx.beginPath();
         ctx.moveTo(cx+10,cy+10);
@@ -209,7 +204,6 @@ PlayerObj.prototype.drawFn = function(){
         ctx.beginPath();
         ctx.arc(cx-12, cy-40, 7, 0, Math.PI*2, false);
         ctx.fill();
-        //ctx.stroke();
         ctx.closePath();
         ctx.restore();
         ctx.save();
@@ -220,31 +214,16 @@ PlayerObj.prototype.drawFn = function(){
         ctx.beginPath();
         ctx.arc(cx+30, cy+11, 7, 0, Math.PI*2, false);
         ctx.fill();
-        //ctx.stroke();
         ctx.closePath();
         ctx.restore();
     }
-    head(ctx, this.x, this.y, this.height, this.width);
-    circle(ctx, this.x+this.width/2, this.y+this.width/2, this.width/2-10);
+    head(ctx, this.x, adjustedY, this.height, this.width);
+    body(ctx, this.x+this.width/2, adjustedY+this.width/2, this.width/2-10);
     
-    triangle(ctx, this.x+5, this.y+5);
-    eyes(ctx, this.x, this.y);
-    feet(ctx, this.x, this.y);
-    arms(ctx, this.x, this.y);
-    //roundedRect(ctx, this.x+10, this.y+10, this.width/4, this.height/6, 3);
-    function roundedRect(ctx,x,y,width,height,radius){
-          ctx.beginPath();
-          ctx.moveTo(x,y+radius);
-          ctx.lineTo(x,y+height-radius);
-          ctx.quadraticCurveTo(x,y+height,x+radius,y+height);
-          ctx.lineTo(x+width-radius,y+height);
-          ctx.quadraticCurveTo(x+width,y+height,x+width,y+height-radius);
-          ctx.lineTo(x+width,y+radius);
-          ctx.quadraticCurveTo(x+width,y,x+width-radius,y);
-          ctx.lineTo(x+radius,y);
-          ctx.quadraticCurveTo(x,y,x,y+radius);
-          ctx.fill();
-    }
+    nose(ctx, this.x+5, adjustedY+5);
+    eyes(ctx, this.x, adjustedY);
+    feet(ctx, this.x, adjustedY);
+    arms(ctx, this.x, adjustedY);
 };
 
 /*
@@ -261,7 +240,7 @@ BlockObj.prototype.constructor = BlockObj;
 BlockObj.prototype.type = BLOCK;
 BlockObj.prototype.drawFn = function(){
     ctx.fillStyle = "blue";
-    ctx.fillRect(this.x, this.y, this.width, this.height);
+    ctx.fillRect(this.x, this.y+topbarSize, this.width, this.height);
 };
 /* This stops the player */
 BlockObj.prototype.playerInteract = function(player){
@@ -286,10 +265,10 @@ PortalObj.prototype.constructor = PortalObj;
 PortalObj.prototype.type = PORTAL;
 PortalObj.prototype.drawFn = function(){
     ctx.fillStyle = "purple";
-    ctx.fillRect(this.x, this.y, this.width, this.height);
+    ctx.fillRect(this.x, this.y+topbarSize, this.width, this.height);
     ctx.fillStyle = "white";
     ctx.font = cellSize + "px Arial";
-    ctx.fillText(this.id, this.x, this.y + cellSize);
+    ctx.fillText(this.id, this.x, this.y + cellSize + topbarSize);
 };
 /* This stops the player */
 PortalObj.prototype.playerInteract = function(player){
@@ -314,10 +293,10 @@ FinishObj.prototype.constructor = FinishObj;
 FinishObj.prototype.type = FINISH;
 FinishObj.prototype.drawFn = function(){
     ctx.fillStyle = "green";
-    ctx.fillRect(this.x, this.y, this.width, this.height);
+    ctx.fillRect(this.x, this.y + topbarSize, this.width, this.height);
 };
 /* This stops the player */
-FinishObj.prototype.playerInteract = function(state){
+FinishObj.prototype.playerInteract = function(player){
     state.curLevel++;
     player.dr = 0;
     player.dc = 0;
@@ -371,7 +350,7 @@ function importPattern(level, pattern) {
     var portalMatches = {};
     for (row = 0; row < pattern.length; row++) {
         rowStr = pattern[row];
-        console.log(rowStr.length);
+        //console.log(rowStr.length);
         for(col = 0; col < rowStr.length; col++) {
             switch(parseInt(rowStr[col])){
                 case EMPTY:
@@ -452,9 +431,9 @@ function GameLevel(timerDelay, rows, cols, pattern) {
     importPattern(this, pattern);
     /* Clears the canvas and redraws all the objects */
     this.redrawAll = function() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.clearRect(0, topbarSize, canvas.width, canvas.height-topbarSize);
         ctx.fillStyle = "rgb(193,251,255)";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillRect(0, topbarSize, canvas.width, canvas.height-topbarSize);
         for(var i = 0; i < this.objTypes.length; i++){
             var objs = this[this.objTypes[i]];
             for(var j = 0; j < objs.length; j++){
@@ -522,6 +501,7 @@ function GameState(timerDelay) {
         if(this.curLevel === -1)
             return;
         this.levels[this.curLevel].redrawAll(state);
+        updateTopbar(this.curLevel);
     };
     /* Calls the update function on all the objects */
     this.updateAll = function(state) {
@@ -543,56 +523,100 @@ function GameState(timerDelay) {
     }
 }
 
+/* Updates the top bar with level, and lives left */
+function updateTopbar(level){
+    if(lives <= 0){
+        endGame();
+        return;
+    }
+    ctx.fillStyle = "yellow";
+    ctx.clearRect(0,0,canvas.width, topbarSize);
+    ctx.fillRect(0,0,canvas.width, topbarSize);
+    ctx.fillStyle = "black";
+    ctx.font = "40px Arial";
+    ctx.fillText("Lives: " + lives,0,40);
+    ctx.fillText("Level: " + level, 300, 40);
+}
+
+/* This function ends the game and removes all key listeners */
+function endGame(){
+    ctx.fillStyle = "rgba(128,128,128,0.75)";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.save();
+    ctx.fillStyle = "black";
+    ctx.textAlign = "center";
+    ctx.fillText("You Lose!", canvas.width/2, canvas.height/2);
+    ctx.fillText("Press any key to retry", canvas.width/2, canvas.height/2 + 50);
+    ctx.restore();
+    canvas.removeEventListener('keydown', onKeyDown);
+    canvas.addEventListener('keydown', continueGame, false);
+}
+
+/* Function to continue the game after death */
+function continueGame(event){
+    lives = 1;
+    clearInterval(state.upInt);
+    clearInterval(state.drawInt);
+    canvas.removeEventListener('keydown', continueGame);
+    canvas.addEventListener('keydown', onKeyDown, false);
+    state = new GameState(10);
+    resetAll();
+}
+
 function onKeyDown(event) {
     state.keyPress(event.keyCode);
 }
 
 
 // Create a new state and add level
+
 state = new GameState(10);
-state.addLevel(15, 20, ["00200000000000000000",
-                        "02100a00000000000002",
-                        "00000000000000000000",
-                        "000000a0020200000000",
-                        "00200000000000000000",
-                        "0000000000020000000b",
-                        "00000000000000000000",
-                        "000000020020000000b0",
-                        "00000000000000000000",
-                        "00002002000000000000",
-                        "00000000000000000000",
-                        "00002000000000000000",
-                        "00000000000000000000",
-                        "00000000000000000003",
-                        "00000000020000000000"]);
-state.addLevel(15, 20, ["22200000000000000000",
-                        "02010200000000000000",
-                        "00000000000000000000",
-                        "00000000020200000000",
-                        "00200000000000000000",
-                        "00000000000200000000",
-                        "00000000000000000000",
-                        "00000002002000000000",
-                        "00000000000000000000",
-                        "00002002000000000000",
-                        "00000000000000000000",
-                        "00002000000000000000",
-                        "00000000000000000000",
-                        "00000000000000000030",
-                        "00000000220000000000"]);
-state.addLevel(15, 20, ["22200000000000000000",
-                        "02010200000000000000",
-                        "00000000001000000000",
-                        "00000000020200000000",
-                        "00200000000000000000",
-                        "00000000000200000000",
-                        "00000000000000000000",
-                        "00000002002000000000",
-                        "00000000000000000000",
-                        "00002002000000000000",
-                        "00000000000000000000",
-                        "00002000000000000000",
-                        "00000000000000000000",
-                        "00000000000000000030",
-                        "00000000220000000000"]);
-state.startGame();
+    function resetAll(){
+        state.addLevel(15, 20, ["00200000000000000000",
+                                "02100a00000000000002",
+                                "00000000000000000000",
+                                "000000a0020200000000",
+                                "00200000000000000000",
+                                "0000000000020000000b",
+                                "00000000000000000000",
+                                "000000020020000000b0",
+                                "00000000000000000000",
+                                "00002002000000000000",
+                                "00000000000000000000",
+                                "00002000000000000000",
+                                "00000000000000000000",
+                                "00000000000000000003",
+                                "00000000020000000000"]);
+        state.addLevel(15, 20, ["22200000000000000000",
+                                "02010200000000000000",
+                                "00000000000000000000",
+                                "00000000020200000000",
+                                "00200000000000000000",
+                                "00000000000200000000",
+                                "00000000000000000000",
+                                "00000002002000000000",
+                                "00000000000000000000",
+                                "00002002000000000000",
+                                "00000000000000000000",
+                                "00002000000000000000",
+                                "00000000000000000000",
+                                "00000000000000000030",
+                                "00000000220000000000"]);
+        state.addLevel(15, 20, ["22200000000000000000",
+                                "02010200000000000000",
+                                "00000000001000000000",
+                                "00000000020200000000",
+                                "00200000000000000000",
+                                "00000000000200000000",
+                                "00000000000000000000",
+                                "00000002002000000000",
+                                "00000000000000000000",
+                                "00002002000000000000",
+                                "00000000000000000000",
+                                "00002000000000000000",
+                                "00000000000000000000",
+                                "00000000000000000030",
+                                "00000000220000000000"]);
+        state.startGame();
+}
+resetAll();
