@@ -12,6 +12,7 @@ var EMPTY = 0;
 var PLAYER = 1;
 var BLOCK = 2;
 var FINISH = 3;
+var PORTAL = 4;
 var cellSize = 40;
 var slideSpeed = 20; //blocks per second
 
@@ -77,7 +78,7 @@ BaseObject.prototype.update = function(state, tdelt) {
         var nextCol = this.col + this.dc;
         if(nextRow >= 0 && nextRow < rows && nextCol >= 0 && nextCol < cols) {
             var nBlock = level.map.grid[nextRow][nextCol];
-            if(nBlock !== undefined && nBlock.type === BLOCK){
+            if(nBlock !== undefined && (nBlock.type === BLOCK || nBlock.type === PORTAL)){
                 nBlock.playerInteract(this);
             }
         }
@@ -122,6 +123,35 @@ BlockObj.prototype.playerInteract = function(player){
     player.x = player.col*cellSize;
     player.y = player.row*cellSize;
 };
+
+/*
+ * A pair of portal blocks that, when touched, spits you
+ * out at the other portal
+ */
+function PortalObj(id, row, col, width, height){
+    BaseObject.call(this, row, col, width, height);
+    this.id = id;
+    this.otherRow = 0;
+    this.otherCol = 0;
+}
+PortalObj.prototype = new BaseObject();
+PortalObj.prototype.constructor = PortalObj;
+PortalObj.prototype.type = PORTAL;
+PortalObj.prototype.drawFn = function(){
+    ctx.fillStyle = "purple";
+    ctx.fillRect(this.x, this.y, this.width, this.height);
+    ctx.fillStyle = "white";
+    ctx.font = cellSize + "px Arial";
+    ctx.fillText(this.id, this.x, this.y + cellSize);
+};
+/* This stops the player */
+PortalObj.prototype.playerInteract = function(player){
+    player.row = this.otherRow;
+    player.col = this.otherCol;
+    player.x = player.col*cellSize;
+    player.y = player.row*cellSize;
+};
+
 
 /*
  * A generic block (inherits from BaseObject)
@@ -179,6 +209,9 @@ function GameMap(rows, cols){
  ["1002",    This pattern corresponds to a map with 3 rows and 4 cols.
   "0300",    The player starts at the top left, and there are 2 blocks
   "0020"]    and an exit.
+ * Exception: portals are specified with a character (a-z). Each portal
+ * should have a matching portal of the same ID (there should be 2 a's, 
+ * 2 b's, etc).
  */
 function importPattern(level, pattern) {
     var row = 0;
@@ -188,8 +221,10 @@ function importPattern(level, pattern) {
         console.log("Pattern doesn't match grid size");
         return;
     }
+    var portalMatches = {};
     for (row = 0; row < pattern.length; row++) {
         rowStr = pattern[row];
+        console.log(rowStr.length);
         for(col = 0; col < rowStr.length; col++) {
             switch(parseInt(rowStr[col])){
                 case EMPTY:
@@ -203,6 +238,23 @@ function importPattern(level, pattern) {
                     break;
                 case BLOCK:
                     level.addObject(new BlockObj(row, col, cellSize, cellSize), level);
+                    break;
+                default:
+                    var id = rowStr[col];
+                    var obj = new PortalObj(id, row, col, cellSize, cellSize);
+                    var match = portalMatches[id]
+                    if(match === undefined) {
+                        portalMatches[id] = [row, col];
+                    }
+                    else{
+                        var otherRow = match[0];
+                        var otherCol = match[1]
+                        obj.otherRow = otherRow;
+                        obj.otherCol = otherCol;
+                        level.map.grid[otherRow][otherCol].otherRow = row;
+                        level.map.grid[otherRow][otherCol].otherCol = col;
+                    }
+                    level.addObject(obj, level);
                     break;
             }
         }
@@ -238,9 +290,8 @@ function GameLevel(timerDelay, rows, cols, pattern) {
                 self.players.push(object);
                 break;
             case BLOCK:
-                self.blocks.push(object);
-                break;
             case FINISH:
+            case PORTAL:
                 self.blocks.push(object);
                 break;
             case EMPTY:
@@ -351,20 +402,20 @@ function onKeyDown(event) {
 // Create a new state and add level
 state = new GameState(10);
 state.addLevel(15, 20, ["00200000000000000000",
-                        "02100200000000000000",
+                        "02100a00000000000002",
                         "00000000000000000000",
-                        "00000000020200000000",
+                        "000000a0020200000000",
                         "00200000000000000000",
-                        "00000000000200000000",
+                        "0000000000020000000b",
                         "00000000000000000000",
-                        "00000002002000000000",
+                        "000000020020000000b0",
                         "00000000000000000000",
                         "00002002000000000000",
                         "00000000000000000000",
                         "00002000000000000000",
                         "00000000000000000000",
                         "00000000000000000003",
-                        "00000000220000000000"]);
+                        "00000000020000000000"]);
 state.addLevel(15, 20, ["22200000000000000000",
                         "02010200000000000000",
                         "00000000000000000000",
