@@ -324,10 +324,40 @@ PortalObj.prototype.constructor = PortalObj;
 PortalObj.prototype.type = PORTAL;
 PortalObj.prototype.drawFn = function(){
     ctx.fillStyle = "purple";
+    
+    for(var i = 2; i < 6; i++){
+        switch(i){
+            case 2:
+                ctx.fillStyle = "#3B0C49";
+                break;
+            case 3:
+                ctx.fillStyle = "#2D282E";
+                break;
+            case 4:
+                ctx.fillStyle = "#A4A4A4";
+                break;
+            case 5:
+                if(this.id == "a"){
+                    ctx.fillStyle = "#FFFFFF";
+                }else{
+                    ctx.fillStyle = "#15EB4F";    
+                }
+                break;
+        }
+        ctx.beginPath();
+        ctx.arc(this.x+cellSize/2, this.y+topbarSize+cellSize/2, cellSize/(i), 0, 2*Math.PI, true);
+        //ctx.stroke();
+        ctx.fill();
+        ctx.closePath();
+    }
+    
+    
+    /*
     ctx.fillRect(this.x, this.y+topbarSize, this.width, this.height);
     ctx.fillStyle = "white";
     ctx.font = cellSize + "px Arial";
     ctx.fillText(this.id, this.x, this.y + cellSize + topbarSize);
+    */
 };
 /* This stops the player */
 PortalObj.prototype.playerInteract = function(player){
