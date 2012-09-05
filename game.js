@@ -39,7 +39,7 @@ function BaseObject(row, col, width, height){
 }
 BaseObject.prototype.type = EMPTY;
 BaseObject.prototype.drawFn = function() {
-	ctx.fillStyle = "rgb(193,251,255)";
+    ctx.fillStyle = "rgb(193,251,255)";
     ctx.fillRect(this.x, this.y + topbarSize, this.width, this.height);
 };
 BaseObject.prototype.reset = function() {
@@ -71,11 +71,11 @@ BaseObject.prototype.update = function(state, tdelt) {
     /* If the object is a player, check if the block it's about to hit is
        a block. If it is, interact with that block */
     if(this instanceof PlayerObj){
-		// Reset the object if it has gone off the screen
-		if (col >= cols || col < 0 || row >= rows || row < 0){
-			lives--;
-			this.reset();
-		}
+        // Reset the object if it has gone off the screen
+        if (col >= cols || col < 0 || row >= rows || row < 0){
+            lives--;
+            this.reset();
+        }
         var nextRow = this.row + this.dr;
         var nextCol = this.col + this.dc;
         if(nextRow >= 0 && nextRow < rows && nextCol >= 0 && nextCol < cols) {
@@ -85,10 +85,10 @@ BaseObject.prototype.update = function(state, tdelt) {
             }
         }
     }
-	else if(this instanceof BlockObj) {
-		if (col >= cols-1 || col <= 0 || row >= rows-1 || row <= 0){
-			this.reset();
-		}
+    else if(this instanceof BlockObj) {
+        if (col >= cols-1 || col <= 0 || row >= rows-1 || row <= 0){
+            this.reset();
+        }
         var nextRow = this.row + this.dr;
         var nextCol = this.col + this.dc;
         if(nextRow >= 0 && nextRow < rows && nextCol >= 0 && nextCol < cols) {
@@ -97,7 +97,7 @@ BaseObject.prototype.update = function(state, tdelt) {
                 nBlock.playerInteract(this);
             }
         }
-	}
+    }
 };
 
 /*
@@ -246,16 +246,43 @@ PlayerObj.prototype.drawFn = function(){
  */
 function BlockObj(row, col, width, height){
     BaseObject.call(this, row, col, width, height);
-	this.i = 0;
+    this.i = 0;
 }
 BlockObj.prototype = new BaseObject();
 BlockObj.prototype.constructor = BlockObj;
 BlockObj.prototype.type = BLOCK;
 BlockObj.prototype.drawFn = function() {
-	this.i++;
-	this.i =  this.i % 20;
-    ctx.fillStyle = this.i > 10 ? "blue" : "red";
-    ctx.fillRect(this.x, this.y+topbarSize, this.width, this.height);
+    ctx.fillStyle = "#BFBFBF";
+    ctx.strokeStyle = "#7F7F7F";
+    ctx.beginPath();
+    ctx.moveTo(this.x, this.y + topbarSize + cellSize);
+    ctx.quadraticCurveTo(this.x, this.y + topbarSize + 10,this.x+5, this.y+topbarSize+5);
+    ctx.quadraticCurveTo(this.x + cellSize/2, this.y + topbarSize - 10, this.x + cellSize-10, this.y+topbarSize+10);
+    ctx.quadraticCurveTo(this.x + cellSize + 5, this.y + topbarSize + 20, this.x + cellSize, this.y+topbarSize + cellSize);
+    ctx.lineTo(this.x, this.y + topbarSize + cellSize);    
+    ctx.fill();
+    ctx.stroke();
+    ctx.closePath();
+    /*
+    ctx.save();
+    ctx.fillStyle = "#CAA37C"; 
+    ctx.translate(this.x, this.y);
+    ctx.scale(1, 0.55);
+    ctx.translate(-this.x, -this.y);
+    ctx.beginPath();
+    ctx.arc(this.x+7, this.y+topbarSize+2*cellSize+25, 8, 0, 2*Math.PI,false);
+    ctx.fill();
+    ctx.stroke();
+    ctx.closePath();
+    ctx.restore();
+    ctx.fillStyle = "#B2B2B2";
+    ctx.beginPath();
+    ctx.moveTo(this.x + cellSize/2, this.y + topbarSize + cellSize);
+    ctx.quadraticCurveTo(this.x + cellSize/2 + 7, this.y + topbarSize + cellSize/2 - 10, this.x+cellSize, this.y+topbarSize+cellSize);
+    ctx.fill();
+    ctx.stroke();
+    ctx.closePath();
+    */
 };
 /* This stops the player */
 BlockObj.prototype.playerInteract = function(player){
@@ -272,7 +299,7 @@ BlockObj.prototype.reset = function() {
 };
 
 function SlideObj(row, col, width, height) {
-	BlockObj.call(this, row, col, width, height);
+    BlockObj.call(this, row, col, width, height);
 }
 SlideObj.prototype = new BlockObj();
 SlideObj.prototype.constructor = SlideObj;
@@ -352,8 +379,28 @@ FinishObj.prototype = new BaseObject();
 FinishObj.prototype.constructor = FinishObj;
 FinishObj.prototype.type = FINISH;
 FinishObj.prototype.drawFn = function(){
-    ctx.fillStyle = "green";
-    ctx.fillRect(this.x, this.y + topbarSize, this.width, this.height);
+    ctx.fillStyle = "#F2F2F2";
+    ctx.strokeStyle = "#D9D9D9";
+    ctx.save();
+    ctx.lineWidth = '2';
+    ctx.beginPath();
+    ctx.arc(this.x + cellSize/2, this.y + topbarSize + cellSize/2, cellSize/2+3, Math.PI-.1, 2*Math.PI+.1, false);
+    ctx.closePath();     
+    ctx.fill();
+    ctx.stroke();
+     
+    ctx.beginPath();
+    ctx.arc(this.x+3, this.y + topbarSize + cellSize/2, 11, Math.PI-.1, 2*Math.PI+.1, false);
+    ctx.closePath();     
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "black";
+    ctx.beginPath();
+    ctx.arc(this.x+3, this.y + topbarSize + cellSize/2, 8, Math.PI-.1, 2*Math.PI+.1, false);
+    ctx.closePath();     
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
 };
 /* This stops the player */
 FinishObj.prototype.playerInteract = function(player){
@@ -383,25 +430,25 @@ function GameMap(rows, cols){
             this.grid[i][j] = new BaseObject(i, j, cellSize, cellSize);
         }
     }
-	this.update = function(state) {
-		var updates = [];
-		var that = this;
-		var obj;
-		for(var i = 0; i < this.grid.length; i++){
-			for(var j = 0; j < cols; j++){
-				obj = this.grid[i][j];
-				if (obj.col !== j || obj.row !== i) {
-					updates.push(obj);
-					this.grid[i][j] = new BaseObject(i, j, cellSize, cellSize);
-				}
-			}
-		}
-		updates.forEach(function(obj) {
-			var row = obj.row;
-			var col = obj.col;
-			that.grid[row][col] = obj;
-		});
-	};
+    this.update = function(state) {
+        var updates = [];
+        var that = this;
+        var obj;
+        for(var i = 0; i < this.grid.length; i++){
+            for(var j = 0; j < cols; j++){
+                obj = this.grid[i][j];
+                if (obj.col !== j || obj.row !== i) {
+                    updates.push(obj);
+                    this.grid[i][j] = new BaseObject(i, j, cellSize, cellSize);
+                }
+            }
+        }
+        updates.forEach(function(obj) {
+            var row = obj.row;
+            var col = obj.col;
+            that.grid[row][col] = obj;
+        });
+    };
 }
 
 /*
@@ -504,7 +551,7 @@ function GameLevel(timerDelay, rows, cols, pattern) {
             case FINISH:
             case PORTAL:
             case BOMB:
-			case SLIDE:
+            case SLIDE:
                 self.blocks.push(object);
                 break;
             case EMPTY:
@@ -521,23 +568,23 @@ function GameLevel(timerDelay, rows, cols, pattern) {
         ctx.clearRect(0, topbarSize, canvas.width, canvas.height-topbarSize);
         ctx.fillStyle = "rgb(193,251,255)";
         ctx.fillRect(0, topbarSize, canvas.width, canvas.height-topbarSize);
-		/* SOME FUNCTION THAT DRAWS BG */
-		this.blocks.forEach(function(block){
-			block.drawFn();
-		});
-		this.players.forEach(function(player){
-			player.drawFn();
-		});
+        /* SOME FUNCTION THAT DRAWS BG */
+        this.blocks.forEach(function(block){
+            block.drawFn();
+        });
+        this.players.forEach(function(player){
+            player.drawFn();
+        });
     };
     /* Calls the update function on all the objects */
     this.updateAll = function(state) {
         var tdelt = this.timerDelay;
         for(var i = 0; i < this.objTypes.length; i++){
-			this[this.objTypes[i]].forEach(function (obj) {
-				obj.update(state, tdelt);
-			});
+            this[this.objTypes[i]].forEach(function (obj) {
+                obj.update(state, tdelt);
+            });
         }
-		this.map.update(state);
+        this.map.update(state);
     };
     /* If the player is not moving, change the player's speed/direction */
     this.keyPress = function(code) {
@@ -565,13 +612,13 @@ function GameLevel(timerDelay, rows, cols, pattern) {
         for (var i = 0; i < this.players.length; i++){
             player = this.players[i];
             if(player.dr === 0 && player.dc === 0) {
-				var nrow, ncol;
-				nrow = player.row + dr;
-				ncol = player.col + dc;
-				if(this.map.grid[nrow][ncol].type === SLIDE){
-					this.map.grid[nrow][ncol].dr = dr;
-					this.map.grid[nrow][ncol].dc = dc;
-				}
+                var nrow, ncol;
+                nrow = player.row + dr;
+                ncol = player.col + dc;
+                if(this.map.grid[nrow][ncol].type === SLIDE){
+                    this.map.grid[nrow][ncol].dr = dr;
+                    this.map.grid[nrow][ncol].dc = dc;
+                }
                 this.players[i].dr = dr;
                 this.players[i].dc = dc;
             }
@@ -670,7 +717,7 @@ state = new GameState(10);
         state.addLevel(15, 20, ["00200000000000000000",
                                 "02100a00000000000002",
                                 "00000000000000000000",
-                                "000000a0610200000000",
+                                "000000a0600200000000",
                                 "00600000000000000000",
                                 "0000000000020000000b",
                                 "00000000000000000000",
