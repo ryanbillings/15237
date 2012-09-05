@@ -375,15 +375,30 @@ BombObj.prototype = new BaseObject();
 BombObj.prototype.constructor = BombObj;
 BombObj.prototype.type = BOMB;
 BombObj.prototype.drawFn = function(){
-    if(lives >= 0){
-        ctx.fillStyle = "black";
-    }else{
-        ctx.fillStyle = "red";
-    }
+    ctx.fillStyle = "#008080";
+    ctx.strokeStyle = "black";
     ctx.beginPath();
-    ctx.arc(this.x+cellSize/2, this.y+topbarSize+cellSize/2, this.width/2, 0, 2*Math.PI, true);
+    ctx.arc(this.x+cellSize/2, this.y+topbarSize+cellSize/2, this.width/2 - 5, 0, 2*Math.PI, true);
     ctx.fill();
+    ctx.stroke();
     ctx.closePath();
+    ctx.beginPath();
+    ctx.moveTo(this.x + (3/5) * cellSize, this.y+topbarSize + 7);
+    ctx.lineTo(this.x + (3/5) * cellSize + 3, this.y+topbarSize + 2);
+    ctx.lineTo(this.x + (3/5) * cellSize + 7, this.y+topbarSize + 4);
+    ctx.lineTo(this.x + (3/5) * cellSize + 5, this.y+topbarSize + 7);
+    ctx.closePath();
+    ctx.stroke();
+    ctx.fill();
+    ctx.beginPath();
+    ctx.strokeStyle = "#A24C00";
+    ctx.moveTo(this.x + (3/5) * cellSize + 4, this.y+topbarSize + 2);
+    ctx.quadraticCurveTo(this.x + cellSize - 5, this.y+topbarSize - 5, this.x + cellSize, this.y+topbarSize)
+    ctx.stroke();
+    ctx.quadraticCurveTo(this.x + cellSize, this.y+topbarSize + 5, this.x+cellSize + 8, this.y+topbarSize-2);
+    ctx.stroke();
+    ctx.closePath();    
+    
 };
 /* This kills the player */
 BombObj.prototype.playerInteract = function(player){
