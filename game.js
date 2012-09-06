@@ -37,7 +37,7 @@ var charToObj = {
 var cellSize = 40;
 var slideSpeed = 20; //blocks per second
 var topbarSize = 50;
-var lives = 10;
+var deaths = 0;
 var selected;
 var editGrid;
 var editedLevel;
@@ -99,7 +99,7 @@ BaseObject.prototype.update = function(state, tdelt) {
         // Reset the object if it has gone off the screen
         if (this instanceof PlayerObj && 
             (col >= cols || col < 0 || row >= rows || row < 0)){
-            lives--;
+            deaths++;
             this.reset();
             level.resetLevel();
         }
@@ -388,7 +388,6 @@ PortalObj.prototype.constructor = PortalObj;
 PortalObj.prototype.type = types.PORTAL;
 PortalObj.prototype.drawFn = function(){
     ctx.fillStyle = "purple";
-    
     for(var i = 2; i < 6; i++){
         switch(i){
             case 2:
@@ -401,10 +400,31 @@ PortalObj.prototype.drawFn = function(){
                 ctx.fillStyle = "#A4A4A4";
                 break;
             case 5:
-                if(this.id == "a"){
-                    ctx.fillStyle = "#FFFFFF";
-                }else{
-                    ctx.fillStyle = "#15EB4F";    
+                switch(this.id){
+                    case "a":
+                        ctx.fillStyle = "#FFFFFF";
+                        break;
+                    case "b":
+                        ctx.fillStyle = "#FF0000";
+                        break;
+                    case "c":
+                        ctx.fillStyle = "#0000FF";
+                        break;
+                    case "x":
+                        ctx.fillStyle = "#00FF00";
+                        break;
+                    case "e":
+                        ctx.fillStyle = "#00FFFF";
+                        break;
+                    case "f":
+                        ctx.fillStyle = "#FF00FF";
+                        break;
+                    case "g":
+                        ctx.fillStyle = "#FFFF00";
+                        break;
+                    case "h":
+                        ctx.fillStyle = "#000000";
+                        break;
                 }
                 break;
         }
@@ -585,7 +605,7 @@ BombObj.prototype.playerInteract = function(player, state){
         player.y = player.startRow*cellSize;
         player.dr = 0;
         player.dc = 0;
-        lives--;
+        deaths++;
         this.reset();
         state.levels[state.curLevel].resetLevel();
     }
@@ -834,6 +854,7 @@ function GameLevel(timerDelay, rows, cols, pattern, title) {
                     if(this.players[i].dr !== 0 || this.players[i].dc !== 0)
                         return;
                 }
+                deaths++;
                 this.resetLevel();
                 return;
             case escCode:
@@ -925,10 +946,10 @@ function GameState(timerDelay) {
 function updateTopbar(state){
     var level = state.curLevel;
     var title = state.levels[level].title;
-    if(lives <= 0){
-        endGame();
-        return;
-    }
+//    if(lives <= 0){
+//        endGame();
+//        return;
+//    }
     ctx.fillStyle = "rgb(193,228,255)";
     ctx.clearRect(0,0,canvas.width, topbarSize);
     ctx.fillRect(0,0,canvas.width, topbarSize);
@@ -939,7 +960,7 @@ function updateTopbar(state){
     ctx.fillText(" - " + title, 10+levelMeasure.width, 35);
     ctx.fillStyle = "rgb(240,121,2)";
     ctx.font = "16px Segoe UI";
-    ctx.fillText("Lives: " + lives, canvas.width - 70, 20);
+    ctx.fillText("Deaths: " + deaths, canvas.width - 70, 20);
 }
 
 /* This function draws the start screen and adds click listeners
@@ -1243,7 +1264,7 @@ function onKeyDown(event) {
 // Create a new state and add level
 function resetAll(){
         state = new GameState(10);
-        lives = 10;
+        deaths = 0;
         // Check if an editedLevel was created. If it is, add it to the game
         if(editedLevel !== undefined && editedLevel !== null){
             state.addLevel(15,20,editedLevel, 'Custom Level');
@@ -1425,20 +1446,20 @@ function resetAll(){
                                 "00000000000000000000"],
                                 "To Push or Not To Push?");
         state.addLevel(15, 20, ["00000000000030000000",
-                                "00000000002006000000",
+                                "00000000002000000000",
                                 "00000000000200000000",
-                                "00220000060066602000",
-                                "00200000060060602000",
+                                "00220000060066200000",
+                                "00200000060060200000",
                                 "00260600000000000000",
                                 "00216020000000000000",
                                 "20060000000000000500",
-                                "00202000220220220000",
+                                "00202222220220222222",
                                 "05222000060006006000",
                                 "00000000002000000000",
                                 "00000200006000000000",
-                                "00000006000620000000",
+                                "00000006000020000000",
                                 "00000000000000000000",
-                                "00000002000000000000"],
+                                "00000002000200000000"],
                                 "Don't Get Stuck");
         // Introduce Sliding blocks destroying bombs
         state.addLevel(15, 20, ["00000000000000000000",
@@ -1540,7 +1561,73 @@ function resetAll(){
                                 "0r0u0000000000000000"],
                                 "Timing is Everything. Don't Be Late.");
 
-/////////
+        // Portals
+        state.addLevel(15, 20, ["00000000000000000000",
+                                "000100000a0000000000",
+                                "00000000000000000000",
+                                "00020000000000000000",
+                                "000000000000000c0000",
+                                "000000c00000000x0000",
+                                "000000x00000000e0000",
+                                "000000e00000000f0000",
+                                "000000f00000000g0000",
+                                "000000g0000000030000",
+                                "000b0000000000000b00",
+                                "00000000000000000000",
+                                "00000000000000000000",
+                                "000a0000000000000020",
+                                "00000000000000000000"],
+                                "Now You're Thinking With Portals.");
+        state.addLevel(15, 20, ["d0000l00000000000000",
+                                "00000600000000000000",
+                                "00000000000000000000",
+                                "d0060000000000a00000",
+                                "00000000000000000000",
+                                "00000000000000000000",
+                                "00000000000000000000",
+                                "00000000000000000000",
+                                "00000000000000000000",
+                                "00000a00000000120000",
+                                "00000000000000200000",
+                                "00000000000000000000",
+                                "00000000000000000000",
+                                "r0000000000000000020",
+                                "00000000000000030000"],
+                                "Recycle, Reuse, Reportal.");
+        state.addLevel(15, 20, ["00000000000000000000",
+                                "00000600000000l00000",
+                                "00100000000000b00000",
+                                "u0000000000000l00000",
+                                "00000000000000000000",
+                                "00000000000000000000",
+                                "00000000000000000000",
+                                "0b000a00000000000200",
+                                "00000000000000000000",
+                                "000000000a0000000000",
+                                "00200000000000000000",
+                                "00000000060000000000",
+                                "00000000600000000000",
+                                "00000000000000002000",
+                                "00000000000000000030"],
+                                "Direction Matters.");
+        state.addLevel(15, 20, ["5505350q5r00drdrd000",
+                                "rd0555d000l0ruru00fd",
+                                "ub0000a1da0000000d00",
+                                "5rd05005r0u55dl50000",
+                                "xdl55rurd0r00b000l00",
+                                "0rd0505u0l055ru00500",
+                                "0dlrdul5r0u0550rc500",
+                                "0r0u05055055500ul500",
+                                "erd0r0u00r00000000u0",
+                                "ruc0000d505505550550",
+                                "5505555r0u0h00l55050",
+                                "55rd5d00000lr0g0000l",
+                                "5dle0000500000555050",
+                                "500000d00g00f05q50rd",
+                                "53xu0lr00u05005550uh"],
+                                "A Lot Harder Than It Looks");
+
+/*
         state.addLevel(15, 20, ["22200000000000000000",
                                 "020106000a0000000000",
                                 "0200d0l0000a00000000",
@@ -1601,7 +1688,7 @@ function resetAll(){
                                 "00002000000000000000",
                                 "00000000000000000000",
                                 "00000000000000000030",
-                                "00000000220000000000"]);
+                                "00000000220000000000"]);*/
         state.startGame(0);
 }
 startScreen();
