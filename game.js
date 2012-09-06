@@ -386,62 +386,29 @@ function PortalObj(id, row, col, width, height){
 PortalObj.prototype = new BaseObject();
 PortalObj.prototype.constructor = PortalObj;
 PortalObj.prototype.type = types.PORTAL;
-PortalObj.prototype.drawFn = function(){
-    ctx.fillStyle = "purple";
-    for(var i = 2; i < 6; i++){
-        switch(i){
-            case 2:
-                ctx.fillStyle = "#3B0C49";
-                break;
-            case 3:
-                ctx.fillStyle = "#2D282E";
-                break;
-            case 4:
-                ctx.fillStyle = "#A4A4A4";
-                break;
-            case 5:
-                switch(this.id){
-                    case "a":
-                        ctx.fillStyle = "#FFFFFF";
-                        break;
-                    case "b":
-                        ctx.fillStyle = "#FF0000";
-                        break;
-                    case "c":
-                        ctx.fillStyle = "#0000FF";
-                        break;
-                    case "x":
-                        ctx.fillStyle = "#00FF00";
-                        break;
-                    case "e":
-                        ctx.fillStyle = "#00FFFF";
-                        break;
-                    case "f":
-                        ctx.fillStyle = "#FF00FF";
-                        break;
-                    case "g":
-                        ctx.fillStyle = "#FFFF00";
-                        break;
-                    case "h":
-                        ctx.fillStyle = "#000000";
-                        break;
-                }
-                break;
-        }
-        ctx.beginPath();
-        ctx.arc(this.x+cellSize/2, this.y+topbarSize+cellSize/2, cellSize/(i), 0, 2*Math.PI, true);
-        //ctx.stroke();
-        ctx.fill();
-        ctx.closePath();
-    }
+PortalObj.prototype.drawFn = function(){	
+	var oldWidth = ctx.lineWidth;
+	ctx.lineWidth = 6;
+	var maxRad = cellSize/1.5;
+	var intervalSize = maxRad/5;
+	for (var i = 0; i < 5; i++) {		
+		var rad = Math.max(0, 
+			intervalSize * (i + ((frame % 100)/100))
+		);
+		var alpha = 1 - ((rad / maxRad) * 1);
+		if (this.id !== "a") {
+			ctx.strokeStyle = "rgba(0, 128, 255, " + alpha + ")";
+		} else {
+			ctx.strokeStyle = "rgba(255, 64, 64, " + alpha + ")";
+		}
+		ctx.beginPath();
+		ctx.arc(this.x + cellSize/2, this.y + topbarSize + cellSize/2,
+				rad, 0, 2*Math.PI, true);
+		ctx.stroke();
+		ctx.closePath();
+	}
+	ctx.lineWidth = oldWidth;
     
-    
-    /*
-    ctx.fillRect(this.x, this.y+topbarSize, this.width, this.height);
-    ctx.fillStyle = "white";
-    ctx.font = cellSize + "px Arial";
-    ctx.fillText(this.id, this.x, this.y + cellSize + topbarSize);
-    */
 };
 /* This stops the player */
 PortalObj.prototype.playerInteract = function(player){
@@ -1692,3 +1659,60 @@ function resetAll(){
         state.startGame(0);
 }
 startScreen();
+
+
+
+
+
+/*
+PortalObj.prototype.drawFn = function(){
+    ctx.fillStyle = "purple";
+    for(var i = 2; i < 6; i++){
+        switch(i){
+            case 2:
+                ctx.fillStyle = "#3B0C49";
+                break;
+            case 3:
+                ctx.fillStyle = "#2D282E";
+                break;
+            case 4:
+                ctx.fillStyle = "#A4A4A4";
+                break;
+            case 5:
+                switch(this.id){
+                    case "a":
+                        ctx.fillStyle = "#FFFFFF";
+                        break;
+                    case "b":
+                        ctx.fillStyle = "#FF0000";
+                        break;
+                    case "c":
+                        ctx.fillStyle = "#0000FF";
+                        break;
+                    case "x":
+                        ctx.fillStyle = "#00FF00";
+                        break;
+                    case "e":
+                        ctx.fillStyle = "#00FFFF";
+                        break;
+                    case "f":
+                        ctx.fillStyle = "#FF00FF";
+                        break;
+                    case "g":
+                        ctx.fillStyle = "#FFFF00";
+                        break;
+                    case "h":
+                        ctx.fillStyle = "#000000";
+                        break;
+                }
+                break;
+        }
+        ctx.beginPath();
+        ctx.arc(this.x+cellSize/2, this.y+topbarSize+cellSize/2, cellSize/(i), 0, 2*Math.PI, true);
+        //ctx.stroke();
+        ctx.fill();
+        ctx.closePath();
+    }
+    
+    
+};*/
