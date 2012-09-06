@@ -472,12 +472,14 @@ ArrowObj.prototype.drawFn = function(){
             ctx.lineTo(this.x+cellSize, this.y+ topbarSize);
             ctx.closePath();
             ctx.stroke();
+            ctx.fill();
             ctx.beginPath();
             ctx.moveTo(this.x, this.y + topbarSize + cellSize/2);
             ctx.lineTo(this.x + cellSize/2, this.y + cellSize + topbarSize);
             ctx.lineTo(this.x + cellSize, this.y+ topbarSize + cellSize/2);
             ctx.closePath();
             ctx.stroke();
+            ctx.fill();
             break;
         case "l":
             ctx.beginPath();
@@ -486,12 +488,14 @@ ArrowObj.prototype.drawFn = function(){
             ctx.lineTo(this.x+cellSize, this.y+ topbarSize + cellSize);
             ctx.closePath();
             ctx.stroke();
+            ctx.fill();
             ctx.beginPath();
             ctx.moveTo(this.x + cellSize/2, this.y + topbarSize);
             ctx.lineTo(this.x, this.y + cellSize/2 + topbarSize);
             ctx.lineTo(this.x + cellSize/2, this.y+ topbarSize + cellSize);
             ctx.closePath();
             ctx.stroke();
+            ctx.fill();
             break;
         case "r":
             ctx.beginPath();
@@ -500,12 +504,14 @@ ArrowObj.prototype.drawFn = function(){
             ctx.lineTo(this.x, this.y+ topbarSize + cellSize);
             ctx.closePath();
             ctx.stroke();
+            ctx.fill();
             ctx.beginPath();
             ctx.moveTo(this.x + cellSize/2, this.y + topbarSize);
             ctx.lineTo(this.x + cellSize, this.y + cellSize/2 + topbarSize);
             ctx.lineTo(this.x + cellSize/2, this.y+ topbarSize + cellSize);
             ctx.closePath();
             ctx.stroke();
+            ctx.fill();
             //ctx.fillStyle = "#FFFF00";
             break;
     }
@@ -952,7 +958,7 @@ function editGame(){
 }
 
 function drawPanel(panelSize){
-    ctx.fillStyle = "yellow";
+    ctx.fillStyle = "#C1E4FF";
     ctx.fillRect(canvas.width-panelSize, 0, panelSize, canvas.height);
     /* Draw blocks */
     var pBlock = new PlayerObj(1.1, 20.1, cellSize, cellSize);
@@ -969,8 +975,21 @@ function drawPanel(panelSize){
     
     var fBlock = new FinishObj(9.1, 20.15, cellSize, cellSize);
     fBlock.drawFn();
-    ctx.fillStyle = "black";
-    ctx.fillText("PLAY", canvas.width - panelSize + 10, 460);
+    
+    var uBlock = new ArrowObj(11.1, 20.1, cellSize, cellSize, "u");
+    uBlock.drawFn();
+    
+    var dBlock = new ArrowObj(13.1, 20.1, cellSize, cellSize, "r");
+    dBlock.drawFn();
+    
+    ctx.fillStyle = "rgb(229,244,255)";
+    ctx.strokeStyle = "rgb(193,228,255)";
+    roundedRect(ctx, canvas.width - panelSize, 600, 50, 30, 10);
+    ctx.fill();
+    ctx.stroke();
+    ctx.font = "14px Segoe UI";
+    ctx.fillStyle = "rgb(240,121,2)";
+    ctx.fillText("PLAY", canvas.width - panelSize + 8, 620);
 }
 
 // from: https://developer.mozilla.org/en-US/docs/Canvas_tutorial/Drawing_shapes
@@ -993,34 +1012,42 @@ function pickBlock(evt){
     var y = evt.pageY - canvas.offsetTop;
     var panelSize = 50;
     if(x > 800 && x < 840){
-        console.log("x: " + x);
-        console.log("y: " + y);
-        if(y > 40 && y < 95){
+        if(y > 35 && y < 85){
             drawPanel(panelSize);
             ctx.fillStyle = "rgba(128,128,128,0.75)";
-            ctx.fillRect(canvas.width - panelSize, 40, panelSize, panelSize);
+            ctx.fillRect(canvas.width - panelSize, 35, panelSize, panelSize);
             selected = 'player';
-        }else if(y > 120 && y < 175){
+        }else if(y > 120 && y < 170){
             drawPanel(panelSize);
             ctx.fillStyle = "rgba(128,128,128,0.75)";
             ctx.fillRect(canvas.width - panelSize, 120, panelSize, panelSize);
             selected = 'block';
-        }else if(y > 200 && y < 255){
+        }else if(y > 200 && y < 250){
             drawPanel(panelSize);
             ctx.fillStyle = "rgba(128,128,128,0.75)";
             ctx.fillRect(canvas.width - panelSize, 200, panelSize, panelSize);
             selected = 'slide';
-        }else if(y > 280 && y < 325){
+        }else if(y > 280 && y < 330){
             drawPanel(panelSize);
             ctx.fillStyle = "rgba(128,128,128,0.75)";
             ctx.fillRect(canvas.width - panelSize, 280, panelSize, panelSize);
             selected = 'bomb';
-        }else if (y > 360 && y < 405){
+        }else if (y > 360 && y < 410){
             drawPanel(panelSize);
             ctx.fillStyle = "rgba(128,128,128,0.75)";
             ctx.fillRect(canvas.width - panelSize, 360, panelSize, panelSize);
             selected = 'finish';
-        }else if (y > 445 && y < 465){
+        }else if (y > 440 && y < 490){
+            drawPanel(panelSize);
+            ctx.fillStyle = "rgba(128,128,128,0.75)";
+            ctx.fillRect(canvas.width - panelSize, 440, panelSize, panelSize);
+            selected = 'up';
+        }else if (y > 520 && y < 570){
+            drawPanel(panelSize);
+            ctx.fillStyle = "rgba(128,128,128,0.75)";
+            ctx.fillRect(canvas.width - panelSize, 520, panelSize, panelSize);
+            selected = 'right';
+        }else if (y > 600 && y < 650){
             playEditedGame();
         }
     }
@@ -1060,6 +1087,18 @@ function pickBlock(evt){
                 }
                 case 'finish':{
                     var p = new FinishObj(gridX, gridY, cellSize, cellSize);
+                    p.drawFn();
+                    editGrid[gridX][gridY] = types.FINISH;
+                    break;
+                }
+                case 'up':{
+                    var p = new ArrowObj(gridX, gridY, cellSize, cellSize, "u");
+                    p.drawFn();
+                    editGrid[gridX][gridY] = types.FINISH;
+                    break;
+                }
+                case 'right':{
+                    var p = new ArrowObj(gridX, gridY, cellSize, cellSize, "r");
                     p.drawFn();
                     editGrid[gridX][gridY] = types.FINISH;
                     break;
