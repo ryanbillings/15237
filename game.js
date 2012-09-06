@@ -43,6 +43,9 @@ var selected;
 var editGrid;
 var editedLevel;
 var iceColor = "rgb(229,244,255)";
+var frame = 0;
+var animIndex = 0;
+var animSpeed = 50;
 
 /*
  * A basic object that stores location and size
@@ -131,29 +134,38 @@ BaseObject.prototype.update = function(state, tdelt) {
  */
 function PlayerObj(row, col, width, height){
     BaseObject.call(this, row, col, width, height);
+	this.imageIndex = 0;
 };
 PlayerObj.prototype = new BaseObject();
 PlayerObj.prototype.constructor = PlayerObj;
 PlayerObj.prototype.type = types.PLAYER;
 PlayerObj.prototype.drawFn = function(){
+	var myPlayer = this;
+	var yAnimOffset = 0;
+	if (animIndex === 0) {
+		yAnimOffset = 0;
+	} else {
+		yAnimOffset = 2;
+	}
+	
     var adjustedY = this.y + topbarSize;
     function body(ctx, cx, cy, radius) {
         ctx.fillStyle = "white";
         ctx.strokeStyle = "black";
         ctx.beginPath();
-        ctx.arc(cx, cy+5, radius, 0, 2*Math.PI, true);
+        ctx.arc(cx, cy+5 + yAnimOffset, radius, 0, 2*Math.PI, true);
         ctx.fill();
         ctx.stroke();
         ctx.closePath();
     }
     
-    function head(ctx, cx, cy, height, width) {
-        ctx.fillStyle = "black";
-        ctx.beginPath();
-        ctx.arc(cx+width/2, cy + 12, height/3, 0, 2*Math.PI, true);
-        ctx.stroke();
-        ctx.fill();
-        ctx.closePath();
+    function head(ctx, cx, cy, height, width) {        
+		ctx.fillStyle = "black";
+		ctx.beginPath();
+		ctx.arc(cx+width/2, cy + 12 + yAnimOffset, height/3, 0, 2*Math.PI, true);
+		ctx.stroke();
+		ctx.fill();
+		ctx.closePath();
     }
     
     function eyes(ctx, cx, cy, width){
@@ -164,7 +176,7 @@ PlayerObj.prototype.drawFn = function(){
         ctx.scale(.9, 1);
         ctx.translate(-cx, -cy);
         ctx.beginPath();
-        ctx.arc(cx+18, cy+10, 4, 0, Math.PI*2, false);
+        ctx.arc(cx+18, cy+10 + yAnimOffset, 4, 0, Math.PI*2, false);
         ctx.fill();
         ctx.closePath();
         ctx.restore();
@@ -175,7 +187,7 @@ PlayerObj.prototype.drawFn = function(){
         ctx.scale(.9, 1);
         ctx.translate(-cx, -cy);
         ctx.beginPath();
-        ctx.arc(cx+18, cy+10, 2, 0, Math.PI*2, false);
+        ctx.arc(cx+18, cy+10 + yAnimOffset, 2, 0, Math.PI*2, false);
         ctx.fill();
         ctx.closePath();
         ctx.restore();
@@ -187,7 +199,7 @@ PlayerObj.prototype.drawFn = function(){
         ctx.scale(.9, 1);
         ctx.translate(-cx, -cy);
         ctx.beginPath();
-        ctx.arc(cx+27, cy+10, 4, 0, Math.PI*2, false);
+        ctx.arc(cx+27, cy+10 + yAnimOffset, 4, 0, Math.PI*2, false);
         ctx.fill();
         ctx.closePath();
         ctx.restore();
@@ -198,7 +210,7 @@ PlayerObj.prototype.drawFn = function(){
         ctx.scale(.9, 1);
         ctx.translate(-cx, -cy);
         ctx.beginPath();
-        ctx.arc(cx+27, cy+10, 2, 0, Math.PI*2, false);
+        ctx.arc(cx+27, cy+10 + yAnimOffset, 2, 0, Math.PI*2, false);
         ctx.fill();
         ctx.closePath();
         ctx.restore();
@@ -207,10 +219,10 @@ PlayerObj.prototype.drawFn = function(){
     function nose(ctx, cx, cy){
         ctx.fillStyle = "#FE9802";
         ctx.beginPath();
-        ctx.moveTo(cx+10,cy+10);
-        ctx.lineTo(cx+15,cy+15);
-        ctx.lineTo(cx+20,cy+10);
-        ctx.lineTo(cx+10,cy+10);
+        ctx.moveTo(cx+10,cy+10 + yAnimOffset);
+        ctx.lineTo(cx+15,cy+15 + yAnimOffset);
+        ctx.lineTo(cx+20,cy+10 + yAnimOffset);
+        ctx.lineTo(cx+10,cy+10 + yAnimOffset);
         ctx.fill();
         ctx.closePath();
     }
@@ -222,9 +234,9 @@ PlayerObj.prototype.drawFn = function(){
         ctx.scale(.8, 1);
         ctx.translate(-cx, -cy);
         ctx.beginPath();
-        ctx.arc(cx+18, cy+35, 5, 0, Math.PI*2, false);
+        ctx.arc(cx+18 - yAnimOffset, cy+35, 5, 0, Math.PI*2, false);
         ctx.fill();
-        ctx.arc(cx+30, cy+35, 5, 0, Math.PI*2, false);
+        ctx.arc(cx+30 + yAnimOffset, cy+35, 5, 0, Math.PI*2, false);
         ctx.fill();
         ctx.closePath();
         ctx.restore();
@@ -239,7 +251,7 @@ PlayerObj.prototype.drawFn = function(){
         ctx.scale(.7, 1);
         ctx.translate(-cx, -cy);
         ctx.beginPath();
-        ctx.arc(cx-12, cy-40, 7, 0, Math.PI*2, false);
+        ctx.arc(cx-12 - yAnimOffset, cy-40, 7, 0, Math.PI*2, false);
         ctx.fill();
         ctx.closePath();
         ctx.restore();
@@ -249,7 +261,7 @@ PlayerObj.prototype.drawFn = function(){
         ctx.scale(.7, 1);
         ctx.translate(-cx, -cy);
         ctx.beginPath();
-        ctx.arc(cx+30, cy+11, 7, 0, Math.PI*2, false);
+        ctx.arc(cx+30 - yAnimOffset, cy+11, 7, 0, Math.PI*2, false);
         ctx.fill();
         ctx.closePath();
         ctx.restore();
@@ -482,7 +494,6 @@ BombObj.prototype.drawFn = function(){
     ctx.quadraticCurveTo(this.x + cellSize, this.y+topbarSize + 5, this.x+cellSize + 8, this.y+topbarSize-2);
     ctx.stroke();
     ctx.closePath();    
-    
 };
 /* This kills the player */
 BombObj.prototype.playerInteract = function(player, state){
@@ -753,6 +764,10 @@ function GameState(timerDelay) {
     };
     /* Calls the update function on all the objects */
     this.updateAll = function(state) {
+		frame++;
+		if (frame % animSpeed === 0) {
+			animIndex = (animIndex + 1) % 2;
+		}
         if(this.curLevel === -1)
             return;
         this.levels[this.curLevel].updateAll(state);
