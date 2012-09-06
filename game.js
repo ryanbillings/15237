@@ -330,8 +330,34 @@ SlideObj.prototype = new BlockObj();
 SlideObj.prototype.constructor = SlideObj;
 SlideObj.prototype.type = types.SLIDE;
 SlideObj.prototype.drawFn = function(){
-    ctx.fillStyle = "pink";
-    ctx.fillRect(this.x, this.y+topbarSize, this.width, this.height);
+    ctx.fillStyle = "#C1E4FF";
+    ctx.beginPath();
+    ctx.moveTo(this.x,this.y+topbarSize+cellSize);
+    ctx.lineTo(this.x, this.y+topbarSize+10);
+    ctx.lineTo(this.x+cellSize-10, this.y+topbarSize+10);
+    ctx.lineTo(this.x+cellSize-10, this.y+topbarSize+cellSize);
+    ctx.lineTo(this.x, this.y+topbarSize+cellSize);
+    ctx.stroke();
+    ctx.fill();
+    ctx.closePath();
+    ctx.beginPath();
+    ctx.moveTo(this.x, this.y+topbarSize+10);
+    ctx.lineTo(this.x + 10, this.y+topbarSize);
+    ctx.lineTo(this.x + cellSize, this.y+topbarSize);
+    ctx.lineTo(this.x+cellSize-10, this.y+topbarSize+10);
+    ctx.lineTo(this.x, this.y+topbarSize + 10);
+    ctx.stroke();
+    ctx.fill();
+    ctx.closePath();
+    ctx.beginPath();
+    ctx.moveTo(this.x + cellSize, this.y+topbarSize);
+    ctx.lineTo(this.x + cellSize, this.y+topbarSize+cellSize-10);
+    ctx.lineTo(this.x + cellSize-10, this.y+topbarSize+cellSize);
+    ctx.lineTo(this.x + cellSize-10, this.y+topbarSize+10);
+    ctx.lineTo(this.x + cellSize, this.y+topbarSize);
+    ctx.stroke();
+    ctx.fill();
+    ctx.closePath();
 };
 
 /*
@@ -419,21 +445,24 @@ ArrowObj.prototype = new BaseObject();
 ArrowObj.prototype.constructor = ArrowObj;
 ArrowObj.prototype.type = types.ARROW;
 ArrowObj.prototype.drawFn = function(){
-    ctx.strokeStyle = "green";
+    ctx.strokeStyle = "#0099CC";
+    ctx.fillStyle = "#00ffff";
     switch(this.dir){
         case "u":
             ctx.beginPath();
             ctx.moveTo(this.x, this.y + topbarSize + cellSize);
             ctx.lineTo(this.x + cellSize/2, this.y + cellSize/2 + topbarSize);
-            ctx.lineTo(this.x+cellSize, this.y+ topbarSize + cellSize);
+            ctx.lineTo(this.x+cellSize, this.y + topbarSize + cellSize);
             ctx.closePath();
             ctx.stroke();
+            ctx.fill();
             ctx.beginPath();
             ctx.moveTo(this.x, this.y + topbarSize + cellSize/2);
             ctx.lineTo(this.x + cellSize/2, this.y + topbarSize);
             ctx.lineTo(this.x + cellSize, this.y+ topbarSize + cellSize/2);
             ctx.closePath();
             ctx.stroke();
+            ctx.fill();
             break;
         case "d":
             ctx.beginPath();
@@ -1074,7 +1103,6 @@ function endGame(){
 
 /* Function to continue the game after death */
 function continueGame(event){
-    lives = 3;
     clearInterval(state.upInt);
     clearInterval(state.drawInt);
     canvas.removeEventListener('keydown', continueGame);
@@ -1090,27 +1118,28 @@ function onKeyDown(event) {
 // Create a new state and add level
 function resetAll(){
         state = new GameState(10);
+        lives = 10;
         if(editedLevel !== undefined && editedLevel !== null){
             state.addLevel(15,20,editedLevel, 'Custom Level');
         }
-        /* Empty Level
-        state.addLevel(15, 20, ["00000000000000000000",
+        /* Empty Level */
+        state.addLevel(15, 20, ["10000020000000000000",
+                                "00000000000000000000",
+                                "00000a00000000600000",
+                                "00000000000000000000",
+                                "02000a00000000000000",
+                                "00000000000000000000",
+                                "6u0000000050000000000",
+                                "00000200000000000000",
                                 "00000000000000000000",
                                 "00000000000000000000",
                                 "00000000000000000000",
                                 "00000000000000000000",
                                 "00000000000000000000",
-                                "00000000000000000000",
-                                "00000000000000000000",
-                                "00000000000000000000",
-                                "00000000000000000000",
-                                "00000000000000000000",
-                                "00000000000000000000",
-                                "00000000000000000000",
-                                "00000000000000000000",
+                                "00000000000000000003",
                                 "00000000000000000000"],
                                 "");
-        */
+        
         /* Each new element introduced should have 3-5 levels devoted to it.
            1: (Relatively) trivial introduction level
            2: Puzzle using new element
