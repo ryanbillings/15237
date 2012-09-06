@@ -784,11 +784,13 @@ function updateTopbar(state){
     ctx.clearRect(0,0,canvas.width, topbarSize);
     ctx.fillRect(0,0,canvas.width, topbarSize);
     ctx.fillStyle = "black";
-    ctx.font = "40px Arial";
-    ctx.fillText("Lives: " + lives,400,40);
-    ctx.fillText("Level: " + level, 600, 40);
-    ctx.font = "bold 40px Arial";
-    ctx.fillText(title, 10, 40);
+    ctx.font = "30px Segoe UI";
+    var levelMeasure = ctx.measureText("Level " + level);
+    ctx.fillText("Level " + level, 10, 35);
+    ctx.fillText(" - " + title, 10+levelMeasure.width, 35);
+    ctx.fillStyle = "rgb(240,121,2)";
+    ctx.font = "16px Segoe UI";
+    ctx.fillText("Lives: " + lives, canvas.width - 60, 20);
 }
 
 function startScreen(){
