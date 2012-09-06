@@ -8,14 +8,33 @@ canvas.setAttribute('tabindex', '0');
 canvas.focus();
 canvas.addEventListener('keydown', onKeyDown, false);
 var ctx = canvas.getContext("2d");
-//var BlockState = {EMPTY: 0, PLAYER: 1, 
-var EMPTY = 0;
-var PLAYER = 1;
-var BLOCK = 2;
-var FINISH = 3;
-var PORTAL = 4;
-var BOMB = 5;
-var SLIDE = 6;
+var types = {
+    "EMPTY": 0,
+    "PLAYER": 1,
+    "BLOCK": 2,
+    "FINISH": 3,
+    "PORTAL": 4,
+    "BOMB": 5,
+    "SLIDE": 6,
+    "ARROW": 7
+}
+var blocks = [types.BLOCK, types.PORTAL, types.SLIDE];
+var onBlocks = [types.ARROW, types.BOMB, types.FINISH];
+
+
+var charToObj = {
+    "0": BaseObject,
+    "1": PlayerObj,
+    "2": BlockObj,
+    "3": FinishObj,
+    "4": PortalObj,
+    "5": BombObj,
+    "6": SlideObj,
+    "u": ArrowObj,
+    "d": ArrowObj,
+    "l": ArrowObj,
+    "r": ArrowObj
+}
 var cellSize = 40;
 var slideSpeed = 20; //blocks per second
 var topbarSize = 50;
@@ -37,7 +56,7 @@ function BaseObject(row, col, width, height){
     this.dr = 0;
     this.dc = 0;
 }
-BaseObject.prototype.type = EMPTY;
+BaseObject.prototype.type = types.EMPTY;
 BaseObject.prototype.drawFn = function() {
     ctx.fillStyle = "rgb(193,251,255)";
     ctx.fillRect(this.x, this.y + topbarSize, this.width, this.height);
@@ -70,32 +89,33 @@ BaseObject.prototype.update = function(state, tdelt) {
     var rows = level.map.rows;
     /* If the object is a player, check if the block it's about to hit is
        a block. If it is, interact with that block */
-    if(this instanceof PlayerObj){
+    if(this instanceof PlayerObj || this instanceof BlockObj){
         // Reset the object if it has gone off the screen
-        if (col >= cols || col < 0 || row >= rows || row < 0){
+
+        if (this instanceof PlayerObj && 
+            (col >= cols || col < 0 || row >= rows || row < 0)){
             lives--;
             this.reset();
         }
+        if (this instanceof BlockObj){
+            if((this.dr !== 0 && (row >= rows-1 || row <= 0)) ||
+               (this.dc !== 0 && (col >= cols-1 || col <= 0)))
+            {
+                this.reset();
+            }
+        }
+        if(this.row >= 0 && this.row < rows && this.col >= 0 && this.col < cols) {
+            var nBlock = level.map.grid[this.row][this.col];
+            if(nBlock !== undefined && onBlocks.indexOf(nBlock.type) !== -1){
+                nBlock.playerInteract(this);
+            }
+        }
         var nextRow = this.row + this.dr;
         var nextCol = this.col + this.dc;
         if(nextRow >= 0 && nextRow < rows && nextCol >= 0 && nextCol < cols) {
             var nBlock = level.map.grid[nextRow][nextCol];
-            if(nBlock !== undefined && (nBlock.type === BLOCK || nBlock.type === SLIDE || nBlock.type === PORTAL || nBlock.type === BOMB || nBlock.type === FINISH)){
+            if(nBlock !== undefined && blocks.indexOf(nBlock.type) !== -1)
                 nBlock.playerInteract(this);
-            }
-        }
-    }
-    else if(this instanceof BlockObj) {
-        if (col >= cols-1 || col <= 0 || row >= rows-1 || row <= 0){
-            this.reset();
-        }
-        var nextRow = this.row + this.dr;
-        var nextCol = this.col + this.dc;
-        if(nextRow >= 0 && nextRow < rows && nextCol >= 0 && nextCol < cols) {
-            var nBlock = level.map.grid[nextRow][nextCol];
-            if(nBlock !== undefined && (nBlock.type === BLOCK || nBlock.type === SLIDE || nBlock.type === PORTAL || nBlock.type === BOMB || nBlock.type === FINISH)){
-                nBlock.playerInteract(this);
-            }
         }
     }
 };
@@ -109,7 +129,7 @@ function PlayerObj(row, col, width, height){
 };
 PlayerObj.prototype = new BaseObject();
 PlayerObj.prototype.constructor = PlayerObj;
-PlayerObj.prototype.type = PLAYER;
+PlayerObj.prototype.type = types.PLAYER;
 PlayerObj.prototype.drawFn = function(){
     var adjustedY = this.y + topbarSize;
     function body(ctx, cx, cy, radius) {
@@ -250,7 +270,7 @@ function BlockObj(row, col, width, height){
 }
 BlockObj.prototype = new BaseObject();
 BlockObj.prototype.constructor = BlockObj;
-BlockObj.prototype.type = BLOCK;
+BlockObj.prototype.type = types.BLOCK;
 BlockObj.prototype.drawFn = function() {
     ctx.fillStyle = "#BFBFBF";
     ctx.strokeStyle = "#7F7F7F";
@@ -303,7 +323,7 @@ function SlideObj(row, col, width, height) {
 }
 SlideObj.prototype = new BlockObj();
 SlideObj.prototype.constructor = SlideObj;
-SlideObj.prototype.type = SLIDE;
+SlideObj.prototype.type = types.SLIDE;
 SlideObj.prototype.drawFn = function(){
     ctx.fillStyle = "pink";
     ctx.fillRect(this.x, this.y+topbarSize, this.width, this.height);
@@ -321,7 +341,7 @@ function PortalObj(id, row, col, width, height){
 }
 PortalObj.prototype = new BaseObject();
 PortalObj.prototype.constructor = PortalObj;
-PortalObj.prototype.type = PORTAL;
+PortalObj.prototype.type = types.PORTAL;
 PortalObj.prototype.drawFn = function(){
     ctx.fillStyle = "purple";
     
@@ -368,12 +388,71 @@ PortalObj.prototype.playerInteract = function(player){
 };
 
 
+function ArrowObj(row, col, width, height, dir){
+    BaseObject.call(this, row, col, width, height);
+    this.dir = dir;
+    var pdr = 0;
+    var pdc = 0;
+    switch(dir){
+        case "u":
+            pdr = -1;
+            break;
+        case "d":
+            pdr = 1;
+            break;
+        case "l":
+            pdc = -1;
+            break;
+        case "r":
+            pdc = 1;
+            break;
+    }
+    this.pdr = pdr;
+    this.pdc = pdc;
+}
+ArrowObj.prototype = new BaseObject();
+ArrowObj.prototype.constructor = ArrowObj;
+ArrowObj.prototype.type = types.ARROW;
+ArrowObj.prototype.drawFn = function(){
+    switch(this.dir){
+        case "u":
+            ctx.fillStyle = "#FF0000";
+            break;
+        case "d":
+            ctx.fillStyle = "#00FF00";
+            break;
+        case "l":
+            ctx.fillStyle = "#0000FF";
+            break;
+        case "r":
+            ctx.fillStyle = "#FFFF00";
+            break;
+    }
+    ctx.fillRect(this.x, this.y+topbarSize, this.width, this.height);
+};
+/* Change the player's direction */
+ArrowObj.prototype.playerInteract = function(player){
+    if(this.pdr !== 0){
+        player.dr = this.pdr;
+        player.dc = 0;
+        player.col = this.col;
+        player.x = player.col*cellSize;
+    }
+    else{
+        player.dc = this.pdc;
+        player.dr = 0;
+        player.row = this.row;
+        player.y = player.row*cellSize;
+    }
+};
+
+
 function BombObj(row, col, width, height){
     BaseObject.call(this, row, col, width, height);
 }
 BombObj.prototype = new BaseObject();
 BombObj.prototype.constructor = BombObj;
-BombObj.prototype.type = BOMB;
+BombObj.prototype.type = types.BOMB;
 BombObj.prototype.drawFn = function(){
     ctx.fillStyle = "#008080";
     ctx.strokeStyle = "black";
@@ -422,7 +501,7 @@ function FinishObj(row, col, width, height){
 }
 FinishObj.prototype = new BaseObject();
 FinishObj.prototype.constructor = FinishObj;
-FinishObj.prototype.type = FINISH;
+FinishObj.prototype.type = types.FINISH;
 FinishObj.prototype.drawFn = function(){
     ctx.fillStyle = "#F2F2F2";
     ctx.strokeStyle = "#D9D9D9";
@@ -449,11 +528,13 @@ FinishObj.prototype.drawFn = function(){
 };
 /* This stops the player */
 FinishObj.prototype.playerInteract = function(player){
-    state.curLevel++;
-    player.dr = 0;
-    player.dc = 0;
-    player.x = player.col*cellSize;
-    player.y = player.row*cellSize;
+    if(player.type === types.PLAYER) {
+        state.curLevel++;
+        player.dr = 0;
+        player.dc = 0;
+        player.x = player.col*cellSize;
+        player.y = player.row*cellSize;
+    }
 };
 
 
@@ -476,19 +557,17 @@ function GameMap(rows, cols){
         }
     }
     this.update = function(state) {
-        var updates = [];
         var that = this;
         var obj;
         for(var i = 0; i < this.grid.length; i++){
             for(var j = 0; j < cols; j++){
                 obj = this.grid[i][j];
-                if (obj.col !== j || obj.row !== i) {
-                    updates.push(obj);
+                if (obj.type !== types.EMPTY) {
                     this.grid[i][j] = new BaseObject(i, j, cellSize, cellSize);
                 }
             }
         }
-        updates.forEach(function(obj) {
+        state.levels[state.curLevel].blocks.forEach(function(obj){
             var row = obj.row;
             var col = obj.col;
             that.grid[row][col] = obj;
@@ -521,44 +600,27 @@ function importPattern(level, pattern) {
     var portalMatches = {};
     for (row = 0; row < pattern.length; row++) {
         rowStr = pattern[row];
-        //console.log(rowStr.length);
         for(col = 0; col < rowStr.length; col++) {
-            switch(parseInt(rowStr[col])){
-                case EMPTY:
-                    level.addObject(new BaseObject(row, col, cellSize, cellSize), level);
-                    break;
-                case PLAYER:
-                    level.addObject(new PlayerObj(row, col, cellSize, cellSize), level);
-                    break;
-                case FINISH:
-                    level.addObject(new FinishObj(row, col, cellSize, cellSize), level);
-                    break;
-                case BLOCK:
-                    level.addObject(new BlockObj(row, col, cellSize, cellSize), level);
-                    break;
-                case BOMB:
-                    level.addObject(new BombObj(row, col, cellSize, cellSize), level);
-                    break;
-                case SLIDE:
-                    level.addObject(new SlideObj(row, col, cellSize, cellSize), level);
-                    break;
-                default:
-                    var id = rowStr[col];
-                    var obj = new PortalObj(id, row, col, cellSize, cellSize);
-                    var match = portalMatches[id]
-                    if(match === undefined) {
-                        portalMatches[id] = [row, col];
-                    }
-                    else{
-                        var otherRow = match[0];
-                        var otherCol = match[1]
-                        obj.otherRow = otherRow;
-                        obj.otherCol = otherCol;
-                        level.map.grid[otherRow][otherCol].otherRow = row;
-                        level.map.grid[otherRow][otherCol].otherCol = col;
-                    }
-                    level.addObject(obj, level);
-                    break;
+            var cha = rowStr[col];
+            if(charToObj[cha] === undefined){
+                var id = rowStr[col];
+                var obj = new PortalObj(id, row, col, cellSize, cellSize);
+                var match = portalMatches[id]
+                if(match === undefined) {
+                    portalMatches[id] = [row, col];
+                }
+                else{
+                    var otherRow = match[0];
+                    var otherCol = match[1]
+                    obj.otherRow = otherRow;
+                    obj.otherCol = otherCol;
+                    level.map.grid[otherRow][otherCol].otherRow = row;
+                    level.map.grid[otherRow][otherCol].otherCol = col;
+                }
+                level.addObject(obj, level);
+            }
+            else {
+                level.addObject(new charToObj[cha](row, col, cellSize, cellSize, cha), level);
             }
         }
     }
@@ -586,24 +648,19 @@ function GameLevel(timerDelay, rows, cols, pattern) {
     /* Add an object to the game state by putting it in
        the correct list and adding it to the grid */
     this.addObject = function(object, self) {
-        if (self === undefined)
+        if(self === undefined)
             self = this;
-        switch(object.type) {
-            case PLAYER:
-                self.players.push(object);
-                return;
-            case BLOCK:
-            case FINISH:
-            case PORTAL:
-            case BOMB:
-            case SLIDE:
-                self.blocks.push(object);
-                break;
-            case EMPTY:
-                break;
-            default:
-                console.log("Invalid object type");
-                return;
+        var otype = object.type;
+        if(otype === types.PLAYER) {
+            self.players.push(object);
+            return;
+        }
+        else if(blocks.indexOf(otype) !== -1 || onBlocks.indexOf(otype) !== -1){
+            self.blocks.push(object);
+        }
+        else if(otype !== types.EMPTY){
+            console.log("Invalid object type " + otype);
+            return;
         }
         self.map.grid[object.row][object.col] = object;
     };
@@ -660,7 +717,7 @@ function GameLevel(timerDelay, rows, cols, pattern) {
                 var nrow, ncol;
                 nrow = player.row + dr;
                 ncol = player.col + dc;
-                if(this.map.grid[nrow][ncol].type === SLIDE){
+                if(this.map.grid[nrow][ncol].type === types.SLIDE){
                     this.map.grid[nrow][ncol].dr = dr;
                     this.map.grid[nrow][ncol].dc = dc;
                 }
@@ -759,6 +816,21 @@ function onKeyDown(event) {
 
 state = new GameState(10);
     function resetAll(){
+        state.addLevel(15, 20, ["22200000000000000000",
+                                "020106000a0000000000",
+                                "0200d0l0000a00000000",
+                                "00r000u0020200000000",
+                                "00200020000000000000",
+                                "000000060d0200000000",
+                                "00002000000000000000",
+                                "00000002002000000000",
+                                "00000000000000000000",
+                                "00002002000000000000",
+                                "00000000000000000000",
+                                "00002000000000000000",
+                                "00000000000000000000",
+                                "00000000000000000030",
+                                "00000000200000000000"]);
         state.addLevel(15, 20, ["00200000000000000000",
                                 "02100a00000000000002",
                                 "00000000000000000000",
@@ -766,9 +838,9 @@ state = new GameState(10);
                                 "00600000000000000000",
                                 "0000000000020000000b",
                                 "00000000000000000000",
-                                "000000025020000000b0",
+                                "000000025520000000b0",
                                 "00000000000000000000",
-                                "00002002000000000000",
+                                "00002002000000000006",
                                 "00000000000000000000",
                                 "00002000000000000000",
                                 "00000000000000000000",
