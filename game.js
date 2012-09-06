@@ -8,20 +8,40 @@ canvas.setAttribute('tabindex', '0');
 canvas.focus();
 //canvas.addEventListener('keydown', onKeyDown, false);
 var ctx = canvas.getContext("2d");
-//var BlockState = {EMPTY: 0, PLAYER: 1, 
-var EMPTY = 0;
-var PLAYER = 1;
-var BLOCK = 2;
-var FINISH = 3;
-var PORTAL = 4;
-var BOMB = 5;
-var SLIDE = 6;
+var types = {
+    "EMPTY": 0,
+    "PLAYER": 1,
+    "BLOCK": 2,
+    "FINISH": 3,
+    "PORTAL": 4,
+    "BOMB": 5,
+    "SLIDE": 6,
+    "ARROW": 7
+}
+var blocks = [types.BLOCK, types.PORTAL, types.SLIDE];
+var onBlocks = [types.ARROW, types.BOMB, types.FINISH];
+
+
+var charToObj = {
+    "0": BaseObject,
+    "1": PlayerObj,
+    "2": BlockObj,
+    "3": FinishObj,
+    "4": PortalObj,
+    "5": BombObj,
+    "6": SlideObj,
+    "u": ArrowObj,
+    "d": ArrowObj,
+    "l": ArrowObj,
+    "r": ArrowObj
+}
 var cellSize = 40;
 var slideSpeed = 20; //blocks per second
 var topbarSize = 50;
 var lives = 3;
 var selected;
 var editGrid;
+var editedLevel;
 var iceColor = "rgb(229,244,255)";
 
 /*
@@ -40,7 +60,7 @@ function BaseObject(row, col, width, height){
     this.dr = 0;
     this.dc = 0;
 }
-BaseObject.prototype.type = EMPTY;
+BaseObject.prototype.type = types.EMPTY;
 BaseObject.prototype.drawFn = function() {
     ctx.fillStyle = iceColor;
     ctx.fillRect(this.x, this.y + topbarSize, this.width, this.height);
@@ -73,32 +93,33 @@ BaseObject.prototype.update = function(state, tdelt) {
     var rows = level.map.rows;
     /* If the object is a player, check if the block it's about to hit is
        a block. If it is, interact with that block */
-    if(this instanceof PlayerObj){
+    if(this instanceof PlayerObj || this instanceof BlockObj){
         // Reset the object if it has gone off the screen
-        if (col >= cols || col < 0 || row >= rows || row < 0){
+
+        if (this instanceof PlayerObj && 
+            (col >= cols || col < 0 || row >= rows || row < 0)){
             lives--;
             this.reset();
         }
+        if (this instanceof BlockObj){
+            if((this.dr !== 0 && (row >= rows-1 || row <= 0)) ||
+               (this.dc !== 0 && (col >= cols-1 || col <= 0)))
+            {
+                this.reset();
+            }
+        }
+        if(this.row >= 0 && this.row < rows && this.col >= 0 && this.col < cols) {
+            var nBlock = level.map.grid[this.row][this.col];
+            if(nBlock !== undefined && onBlocks.indexOf(nBlock.type) !== -1){
+                nBlock.playerInteract(this);
+            }
+        }
         var nextRow = this.row + this.dr;
         var nextCol = this.col + this.dc;
         if(nextRow >= 0 && nextRow < rows && nextCol >= 0 && nextCol < cols) {
             var nBlock = level.map.grid[nextRow][nextCol];
-            if(nBlock !== undefined && (nBlock.type === BLOCK || nBlock.type === SLIDE || nBlock.type === PORTAL || nBlock.type === BOMB || nBlock.type === FINISH)){
+            if(nBlock !== undefined && blocks.indexOf(nBlock.type) !== -1)
                 nBlock.playerInteract(this);
-            }
-        }
-    }
-    else if(this instanceof BlockObj) {
-        if (col >= cols-1 || col <= 0 || row >= rows-1 || row <= 0){
-            this.reset();
-        }
-        var nextRow = this.row + this.dr;
-        var nextCol = this.col + this.dc;
-        if(nextRow >= 0 && nextRow < rows && nextCol >= 0 && nextCol < cols) {
-            var nBlock = level.map.grid[nextRow][nextCol];
-            if(nBlock !== undefined && (nBlock.type === BLOCK || nBlock.type === SLIDE || nBlock.type === PORTAL || nBlock.type === BOMB || nBlock.type === FINISH)){
-                nBlock.playerInteract(this);
-            }
         }
     }
 };
@@ -112,7 +133,7 @@ function PlayerObj(row, col, width, height){
 };
 PlayerObj.prototype = new BaseObject();
 PlayerObj.prototype.constructor = PlayerObj;
-PlayerObj.prototype.type = PLAYER;
+PlayerObj.prototype.type = types.PLAYER;
 PlayerObj.prototype.drawFn = function(){
     var adjustedY = this.y + topbarSize;
     function body(ctx, cx, cy, radius) {
@@ -253,7 +274,7 @@ function BlockObj(row, col, width, height){
 }
 BlockObj.prototype = new BaseObject();
 BlockObj.prototype.constructor = BlockObj;
-BlockObj.prototype.type = BLOCK;
+BlockObj.prototype.type = types.BLOCK;
 BlockObj.prototype.drawFn = function() {
     ctx.fillStyle = "#BFBFBF";
     ctx.strokeStyle = "#7F7F7F";
@@ -306,7 +327,7 @@ function SlideObj(row, col, width, height) {
 }
 SlideObj.prototype = new BlockObj();
 SlideObj.prototype.constructor = SlideObj;
-SlideObj.prototype.type = SLIDE;
+SlideObj.prototype.type = types.SLIDE;
 SlideObj.prototype.drawFn = function(){
     ctx.fillStyle = "pink";
     ctx.fillRect(this.x, this.y+topbarSize, this.width, this.height);
@@ -324,7 +345,7 @@ function PortalObj(id, row, col, width, height){
 }
 PortalObj.prototype = new BaseObject();
 PortalObj.prototype.constructor = PortalObj;
-PortalObj.prototype.type = PORTAL;
+PortalObj.prototype.type = types.PORTAL;
 PortalObj.prototype.drawFn = function(){
     ctx.fillStyle = "purple";
     
@@ -371,12 +392,71 @@ PortalObj.prototype.playerInteract = function(player){
 };
 
 
+function ArrowObj(row, col, width, height, dir){
+    BaseObject.call(this, row, col, width, height);
+    this.dir = dir;
+    var pdr = 0;
+    var pdc = 0;
+    switch(dir){
+        case "u":
+            pdr = -1;
+            break;
+        case "d":
+            pdr = 1;
+            break;
+        case "l":
+            pdc = -1;
+            break;
+        case "r":
+            pdc = 1;
+            break;
+    }
+    this.pdr = pdr;
+    this.pdc = pdc;
+}
+ArrowObj.prototype = new BaseObject();
+ArrowObj.prototype.constructor = ArrowObj;
+ArrowObj.prototype.type = types.ARROW;
+ArrowObj.prototype.drawFn = function(){
+    switch(this.dir){
+        case "u":
+            ctx.fillStyle = "#FF0000";
+            break;
+        case "d":
+            ctx.fillStyle = "#00FF00";
+            break;
+        case "l":
+            ctx.fillStyle = "#0000FF";
+            break;
+        case "r":
+            ctx.fillStyle = "#FFFF00";
+            break;
+    }
+    ctx.fillRect(this.x, this.y+topbarSize, this.width, this.height);
+};
+/* Change the player's direction */
+ArrowObj.prototype.playerInteract = function(player){
+    if(this.pdr !== 0){
+        player.dr = this.pdr;
+        player.dc = 0;
+        player.col = this.col;
+        player.x = player.col*cellSize;
+    }
+    else{
+        player.dc = this.pdc;
+        player.dr = 0;
+        player.row = this.row;
+        player.y = player.row*cellSize;
+    }
+};
+
+
 function BombObj(row, col, width, height){
     BaseObject.call(this, row, col, width, height);
 }
 BombObj.prototype = new BaseObject();
 BombObj.prototype.constructor = BombObj;
-BombObj.prototype.type = BOMB;
+BombObj.prototype.type = types.BOMB;
 BombObj.prototype.drawFn = function(){
     ctx.fillStyle = "#008080";
     ctx.strokeStyle = "black";
@@ -425,7 +505,7 @@ function FinishObj(row, col, width, height){
 }
 FinishObj.prototype = new BaseObject();
 FinishObj.prototype.constructor = FinishObj;
-FinishObj.prototype.type = FINISH;
+FinishObj.prototype.type = types.FINISH;
 FinishObj.prototype.drawFn = function(){
     ctx.fillStyle = "#F2F2F2";
     ctx.strokeStyle = "#D9D9D9";
@@ -452,11 +532,13 @@ FinishObj.prototype.drawFn = function(){
 };
 /* This stops the player */
 FinishObj.prototype.playerInteract = function(player){
-    state.curLevel++;
-    player.dr = 0;
-    player.dc = 0;
-    player.x = player.col*cellSize;
-    player.y = player.row*cellSize;
+    if(player.type === types.PLAYER) {
+        state.curLevel++;
+        player.dr = 0;
+        player.dc = 0;
+        player.x = player.col*cellSize;
+        player.y = player.row*cellSize;
+    }
 };
 
 
@@ -479,19 +561,17 @@ function GameMap(rows, cols){
         }
     }
     this.update = function(state) {
-        var updates = [];
         var that = this;
         var obj;
         for(var i = 0; i < this.grid.length; i++){
             for(var j = 0; j < cols; j++){
                 obj = this.grid[i][j];
-                if (obj.col !== j || obj.row !== i) {
-                    updates.push(obj);
+                if (obj.type !== types.EMPTY) {
                     this.grid[i][j] = new BaseObject(i, j, cellSize, cellSize);
                 }
             }
         }
-        updates.forEach(function(obj) {
+        state.levels[state.curLevel].blocks.forEach(function(obj){
             var row = obj.row;
             var col = obj.col;
             that.grid[row][col] = obj;
@@ -524,44 +604,27 @@ function importPattern(level, pattern) {
     var portalMatches = {};
     for (row = 0; row < pattern.length; row++) {
         rowStr = pattern[row];
-        //console.log(rowStr.length);
         for(col = 0; col < rowStr.length; col++) {
-            switch(parseInt(rowStr[col])){
-                case EMPTY:
-                    level.addObject(new BaseObject(row, col, cellSize, cellSize), level);
-                    break;
-                case PLAYER:
-                    level.addObject(new PlayerObj(row, col, cellSize, cellSize), level);
-                    break;
-                case FINISH:
-                    level.addObject(new FinishObj(row, col, cellSize, cellSize), level);
-                    break;
-                case BLOCK:
-                    level.addObject(new BlockObj(row, col, cellSize, cellSize), level);
-                    break;
-                case BOMB:
-                    level.addObject(new BombObj(row, col, cellSize, cellSize), level);
-                    break;
-                case SLIDE:
-                    level.addObject(new SlideObj(row, col, cellSize, cellSize), level);
-                    break;
-                default:
-                    var id = rowStr[col];
-                    var obj = new PortalObj(id, row, col, cellSize, cellSize);
-                    var match = portalMatches[id]
-                    if(match === undefined) {
-                        portalMatches[id] = [row, col];
-                    }
-                    else{
-                        var otherRow = match[0];
-                        var otherCol = match[1]
-                        obj.otherRow = otherRow;
-                        obj.otherCol = otherCol;
-                        level.map.grid[otherRow][otherCol].otherRow = row;
-                        level.map.grid[otherRow][otherCol].otherCol = col;
-                    }
-                    level.addObject(obj, level);
-                    break;
+            var cha = rowStr[col];
+            if(charToObj[cha] === undefined){
+                var id = rowStr[col];
+                var obj = new PortalObj(id, row, col, cellSize, cellSize);
+                var match = portalMatches[id]
+                if(match === undefined) {
+                    portalMatches[id] = [row, col];
+                }
+                else{
+                    var otherRow = match[0];
+                    var otherCol = match[1]
+                    obj.otherRow = otherRow;
+                    obj.otherCol = otherCol;
+                    level.map.grid[otherRow][otherCol].otherRow = row;
+                    level.map.grid[otherRow][otherCol].otherCol = col;
+                }
+                level.addObject(obj, level);
+            }
+            else {
+                level.addObject(new charToObj[cha](row, col, cellSize, cellSize, cha), level);
             }
         }
     }
@@ -576,9 +639,10 @@ function importPattern(level, pattern) {
  * Note that the players/blocks are stored in 2 data types: lists
  * of each respective object and a grid with their locations.
  */
-function GameLevel(timerDelay, rows, cols, pattern) {
+function GameLevel(timerDelay, rows, cols, pattern, title) {
     this.map = new GameMap(rows, cols);
     this.timerDelay = timerDelay;
+    this.title = title;
     // The types of objects stored in the game state
     // Used in [redraw,update]All to loop through all objects
     this.objTypes = ["players", "blocks"];
@@ -589,24 +653,19 @@ function GameLevel(timerDelay, rows, cols, pattern) {
     /* Add an object to the game state by putting it in
        the correct list and adding it to the grid */
     this.addObject = function(object, self) {
-        if (self === undefined)
+        if(self === undefined)
             self = this;
-        switch(object.type) {
-            case PLAYER:
-                self.players.push(object);
-                return;
-            case BLOCK:
-            case FINISH:
-            case PORTAL:
-            case BOMB:
-            case SLIDE:
-                self.blocks.push(object);
-                break;
-            case EMPTY:
-                break;
-            default:
-                console.log("Invalid object type");
-                return;
+        var otype = object.type;
+        if(otype === types.PLAYER) {
+            self.players.push(object);
+            return;
+        }
+        else if(blocks.indexOf(otype) !== -1 || onBlocks.indexOf(otype) !== -1){
+            self.blocks.push(object);
+        }
+        else if(otype !== types.EMPTY){
+            console.log("Invalid object type " + otype);
+            return;
         }
         self.map.grid[object.row][object.col] = object;
     };
@@ -663,7 +722,7 @@ function GameLevel(timerDelay, rows, cols, pattern) {
                 var nrow, ncol;
                 nrow = player.row + dr;
                 ncol = player.col + dc;
-                if(this.map.grid[nrow][ncol].type === SLIDE){
+                if(this.map.grid[nrow][ncol].type === types.SLIDE){
                     this.map.grid[nrow][ncol].dr = dr;
                     this.map.grid[nrow][ncol].dc = dc;
                 }
@@ -683,15 +742,15 @@ function GameState(timerDelay) {
     this.timerDelay = timerDelay;
     this.curLevel = -1;
     this.levels = new Array();
-    this.addLevel = function(rows, cols, pattern) {
-        this.levels.push(new GameLevel(this.timerDelay, rows, cols, pattern));
+    this.addLevel = function(rows, cols, pattern, title) {
+        this.levels.push(new GameLevel(this.timerDelay, rows, cols, pattern, title));
     };
     /* Clears the canvas and redraws all the objects */
     this.redrawAll = function(state) {
         if(this.curLevel === -1)
             return;
         this.levels[this.curLevel].redrawAll(state);
-        updateTopbar(this.curLevel);
+        updateTopbar(this);
     };
     /* Calls the update function on all the objects */
     this.updateAll = function(state) {
@@ -714,7 +773,9 @@ function GameState(timerDelay) {
 }
 
 /* Updates the top bar with level, and lives left */
-function updateTopbar(level){
+function updateTopbar(state){
+    var level = state.curLevel;
+    var title = state.levels[level].title;
     if(lives <= 0){
         endGame();
         return;
@@ -724,25 +785,69 @@ function updateTopbar(level){
     ctx.fillRect(0,0,canvas.width, topbarSize);
     ctx.fillStyle = "black";
     ctx.font = "40px Arial";
-    ctx.fillText("Lives: " + lives,0,40);
-    ctx.fillText("Level: " + level, 300, 40);
+    ctx.fillText("Lives: " + lives,400,40);
+    ctx.fillText("Level: " + level, 600, 40);
+    ctx.font = "bold 40px Arial";
+    ctx.fillText(title, 10, 40);
 }
 
 function startScreen(){
-    ctx.fillStyle = "rgb(229,244,255)";
+    ctx.fillStyle = "rgb(198,210,216)";
     ctx.clearRect(0,0,canvas.width,canvas.height);
     ctx.fillRect(0,0,canvas.width, canvas.height);
+    ctx.save();
+    ctx.font = "55px Segoe UI";
     ctx.fillStyle = 'black';
-    ctx.fillText("Ice Cave", canvas.width/2, canvas.height/2);
-    ctx.fillText("A game inspired by Pokemon", canvas.width/2, canvas.height/2 + 50);
-    canvas.addEventListener('keydown', playGame, false);
+    var centerSpacing = canvas.width/2 - 95;
+    ctx.fillText("Pen", centerSpacing, canvas.height/2);
+    var pen = ctx.measureText("Pen");
+    ctx.fillStyle = 'white';
+    var g = ctx.measureText("g");
+    ctx.fillText("g", centerSpacing+pen.width, canvas.height/2);
+    ctx.fillStyle = 'black';
+    ctx.fillText("uin", centerSpacing+pen.width+g.width,canvas.height/2);
+    ctx.font = "11px Segoe UI";
+    ctx.textAlign = "center";
+    ctx.fillText("a game inspired by Pokemon", canvas.width/2, canvas.height/2 + 50);
+    
+    // Buttons
+    ctx.fillStyle = "rgb(229,244,255)";
+    ctx.strokeStyle = "rgb(193,228,255)";
+    roundedRect(ctx, canvas.width/2 - 70, canvas.height - 220, 150, 75, 10);
+    ctx.fill();
+    ctx.stroke();
+    
+    ctx.fillStyle = "rgb(253,128,3)";
+    ctx.font = "25px Segoe UI";
+    ctx.fillText("Start!", canvas.width/2 + 5, canvas.height - 175);
+    
+    ctx.fillStyle = "rgb(229,244,255)";
+    roundedRect(ctx, canvas.width/2 - 70, canvas.height - 100, 150, 75, 10);
+    ctx.fill();
+    ctx.stroke();
+    
+    ctx.fillStyle = "rgb(253,128,3)";
+    ctx.font = "25px Segoe UI";
+    ctx.fillText("Create Level", canvas.width/2 + 5, canvas.height - 55);
+    
+    
+    ctx.restore();
+    canvas.addEventListener('mousedown', chooseMode, false);
 }
 
-function playGame(){
-    canvas.removeEventListener('keydown', playGame);
-    canvas.addEventListener('keydown', onKeyDown, false);
-    editGame();
-    //resetAll();
+function chooseMode(event){
+    var x = event.pageX - canvas.offsetLeft;  // do not use event.x, it's not cross-browser!!!
+    var y = event.pageY - canvas.offsetTop;
+    if (x > 330 & x < 480){
+      if(y > 430 && y < 500){
+        canvas.removeEventListener('mousedown', chooseMode);
+        canvas.addEventListener('keydown', onKeyDown, false);
+        resetAll();
+      }else if(y > 550 && y < 625){
+        canvas.removeEventListener('mousedown', chooseMode);
+        editGame();
+      }
+    }
 }
 
 function editGame(){
@@ -781,6 +886,21 @@ function drawPanel(panelSize){
     fBlock.drawFn();
     ctx.fillStyle = "black";
     ctx.fillText("PLAY", canvas.width - panelSize + 10, 460);
+}
+
+// from: https://developer.mozilla.org/en-US/docs/Canvas_tutorial/Drawing_shapes
+function roundedRect(ctx,x,y,width,height,radius){
+    ctx.beginPath();
+    ctx.moveTo(x,y+radius);
+    ctx.lineTo(x,y+height-radius);
+    ctx.quadraticCurveTo(x,y+height,x+radius,y+height);
+    ctx.lineTo(x+width-radius,y+height);
+    ctx.quadraticCurveTo(x+width,y+height,x+width,y+height-radius);
+    ctx.lineTo(x+width,y+radius);
+    ctx.quadraticCurveTo(x+width,y,x+width-radius,y);
+    ctx.lineTo(x+radius,y);
+    ctx.quadraticCurveTo(x,y,x,y+radius);
+    ctx.stroke();
 }
 
 function pickBlock(evt){
@@ -830,31 +950,31 @@ function pickBlock(evt){
                 case 'player':{
                     var p = new PlayerObj(gridX, gridY, cellSize, cellSize);
                     p.drawFn();
-                    editGrid[gridX][gridY] = PLAYER;
+                    editGrid[gridX][gridY] = types.PLAYER;
                     break;
                 }
                 case 'block':{
                     var p = new BlockObj(gridX, gridY, cellSize, cellSize);
                     p.drawFn();
-                    editGrid[gridX][gridY] = BLOCK;
+                    editGrid[gridX][gridY] = types.BLOCK;
                     break;
                 }
                 case 'slide':{
                     var p = new SlideObj(gridX, gridY, cellSize, cellSize);
                     p.drawFn();
-                    editGrid[gridX][gridY] = SLIDE;
+                    editGrid[gridX][gridY] = types.SLIDE;
                     break;
                 }
                 case 'bomb':{
                     var p = new BombObj(gridX, gridY, cellSize, cellSize);
                     p.drawFn();
-                    editGrid[gridX][gridY] = BOMB;
+                    editGrid[gridX][gridY] = types.BOMB;
                     break;
                 }
                 case 'finish':{
                     var p = new FinishObj(gridX, gridY, cellSize, cellSize);
                     p.drawFn();
-                    editGrid[gridX][gridY] = FINISH;
+                    editGrid[gridX][gridY] = types.FINISH;
                     break;
                 }
             }
@@ -866,22 +986,20 @@ function playEditedGame(){
     canvas.removeEventListener('mousedown',pickBlock);
     canvas.width -= 50;
     topbarSize = 50;
-    state = new GameState(10);
-    var editedLevel = new Array(15);
+    editedLevel = new Array(15);
     for(var i = 0; i < editGrid.length; i++){
         var patternLevel = "";
         for(var j = 0; j < editGrid[i].length; j++){
             if(editGrid[i][j] === undefined){
-                patternLevel += EMPTY;
+                patternLevel += types.EMPTY;
             }else{
                 patternLevel += editGrid[i][j];
             }
         }
         editedLevel[i] = patternLevel;
     }
-    console.log(editedLevel);
-    state.addLevel(15, 20, editedLevel);
-    state.startGame();
+    canvas.addEventListener('keydown', onKeyDown, false);
+    resetAll();
 }
 
 
@@ -917,6 +1035,25 @@ function onKeyDown(event) {
 // Create a new state and add level
 function resetAll(){
         state = new GameState(10);
+        if(editedLevel !== undefined && editedLevel !== null){
+            state.addLevel(15,20,editedLevel, 'Custom Level');
+        }
+        state.addLevel(15, 20, ["22200000000000000000",
+                                "020106000a0000000000",
+                                "0200d0l0000a00000000",
+                                "00r000u0020200000000",
+                                "00200020000000000000",
+                                "000000060d0200000000",
+                                "00002000000000000000",
+                                "00000002002000000000",
+                                "00000000000000000000",
+                                "00002002000000000000",
+                                "00000000000000000000",
+                                "00002000000000000000",
+                                "00000000000000000000",
+                                "00000000000000000030",
+                                "00000000200000000000"],
+                                "The Beginning");
         state.addLevel(15, 20, ["00200000000000000000",
                                 "02100a00000000000002",
                                 "00000000000000000000",
@@ -924,9 +1061,9 @@ function resetAll(){
                                 "00600000000000000000",
                                 "0000000000020000000b",
                                 "00000000000000000000",
-                                "000000025020000000b0",
+                                "000000025520000000b0",
                                 "00000000000000000000",
-                                "00002002000000000000",
+                                "00002002000000000006",
                                 "00000000000000000000",
                                 "00002000000000000000",
                                 "00000000000000000000",
