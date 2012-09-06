@@ -386,42 +386,29 @@ function PortalObj(id, row, col, width, height){
 PortalObj.prototype = new BaseObject();
 PortalObj.prototype.constructor = PortalObj;
 PortalObj.prototype.type = types.PORTAL;
-PortalObj.prototype.drawFn = function(){
-    ctx.fillStyle = "purple";
+PortalObj.prototype.drawFn = function(){	
+	var oldWidth = ctx.lineWidth;
+	ctx.lineWidth = 6;
+	var maxRad = cellSize/1.5;
+	var intervalSize = maxRad/5;
+	for (var i = 0; i < 5; i++) {		
+		var rad = Math.max(0, 
+			intervalSize * (i + ((frame % 100)/100))
+		);
+		var alpha = 1 - ((rad / maxRad) * 1);
+		if (this.id !== "a") {
+			ctx.strokeStyle = "rgba(0, 128, 255, " + alpha + ")";
+		} else {
+			ctx.strokeStyle = "rgba(255, 64, 64, " + alpha + ")";
+		}
+		ctx.beginPath();
+		ctx.arc(this.x + cellSize/2, this.y + topbarSize + cellSize/2,
+				rad, 0, 2*Math.PI, true);
+		ctx.stroke();
+		ctx.closePath();
+	}
+	ctx.lineWidth = oldWidth;
     
-    for(var i = 2; i < 6; i++){
-        switch(i){
-            case 2:
-                ctx.fillStyle = "#3B0C49";
-                break;
-            case 3:
-                ctx.fillStyle = "#2D282E";
-                break;
-            case 4:
-                ctx.fillStyle = "#A4A4A4";
-                break;
-            case 5:
-                if(this.id == "a"){
-                    ctx.fillStyle = "#FFFFFF";
-                }else{
-                    ctx.fillStyle = "#15EB4F";    
-                }
-                break;
-        }
-        ctx.beginPath();
-        ctx.arc(this.x+cellSize/2, this.y+topbarSize+cellSize/2, cellSize/(i), 0, 2*Math.PI, true);
-        //ctx.stroke();
-        ctx.fill();
-        ctx.closePath();
-    }
-    
-    
-    /*
-    ctx.fillRect(this.x, this.y+topbarSize, this.width, this.height);
-    ctx.fillStyle = "white";
-    ctx.font = cellSize + "px Arial";
-    ctx.fillText(this.id, this.x, this.y + cellSize + topbarSize);
-    */
 };
 /* This stops the player */
 PortalObj.prototype.playerInteract = function(player){
