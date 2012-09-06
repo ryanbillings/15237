@@ -331,6 +331,7 @@ SlideObj.prototype.constructor = SlideObj;
 SlideObj.prototype.type = types.SLIDE;
 SlideObj.prototype.drawFn = function(){
     ctx.fillStyle = "#C1E4FF";
+    ctx.strokeStyle = "#8FBDDE";
     ctx.beginPath();
     ctx.moveTo(this.x,this.y+topbarSize+cellSize);
     ctx.lineTo(this.x, this.y+topbarSize+10);
@@ -992,6 +993,8 @@ function pickBlock(evt){
     var y = evt.pageY - canvas.offsetTop;
     var panelSize = 50;
     if(x > 800 && x < 840){
+        console.log("x: " + x);
+        console.log("y: " + y);
         if(y > 40 && y < 95){
             drawPanel(panelSize);
             ctx.fillStyle = "rgba(128,128,128,0.75)";
@@ -1002,10 +1005,10 @@ function pickBlock(evt){
             ctx.fillStyle = "rgba(128,128,128,0.75)";
             ctx.fillRect(canvas.width - panelSize, 120, panelSize, panelSize);
             selected = 'block';
-        }else if(y > 210 && y < 255){
+        }else if(y > 200 && y < 255){
             drawPanel(panelSize);
             ctx.fillStyle = "rgba(128,128,128,0.75)";
-            ctx.fillRect(canvas.width - panelSize, 210, panelSize, panelSize);
+            ctx.fillRect(canvas.width - panelSize, 200, panelSize, panelSize);
             selected = 'slide';
         }else if(y > 280 && y < 325){
             drawPanel(panelSize);
