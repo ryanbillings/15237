@@ -904,9 +904,19 @@ function GameState(timerDelay) {
     this.keyPress = function(code) {
         if(this.curLevel === -1)
             return;
-        this.levels[this.curLevel].keyPress(code);
+        var plusCode = 221;
+        var minusCode = 219;
+        if(code === plusCode && this.curLevel < this.levels.length-1){
+            this.startGame(this.curLevel+1);
+        }
+        else if(code === minusCode && this.curLevel > 0){
+            this.startGame(this.curLevel-1);
+        }
+        else
+            this.levels[this.curLevel].keyPress(code);
     };
     this.nextLevel = function(){
+        this.levels[this.curLevel].resetLevel();
         this.startGame(this.curLevel+1);
     };
 }
@@ -1414,8 +1424,8 @@ function resetAll(){
                                 "00000000000000000000",
                                 "00000000000000000000"],
                                 "To Push or Not To Push?");
-        state.addLevel(15, 20, ["00000000000000000000",
-                                "00000000002300000000",
+        state.addLevel(15, 20, ["00000000000030000000",
+                                "00000000002006000000",
                                 "00000000000200000000",
                                 "00220000060066602000",
                                 "00200000060060602000",
