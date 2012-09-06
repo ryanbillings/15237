@@ -6,7 +6,7 @@
 var canvas = document.getElementById("myCanvas");
 canvas.setAttribute('tabindex', '0');
 canvas.focus();
-canvas.addEventListener('keydown', onKeyDown, false);
+//canvas.addEventListener('keydown', onKeyDown, false);
 var ctx = canvas.getContext("2d");
 //var BlockState = {EMPTY: 0, PLAYER: 1, 
 var EMPTY = 0;
@@ -20,6 +20,9 @@ var cellSize = 40;
 var slideSpeed = 20; //blocks per second
 var topbarSize = 50;
 var lives = 3;
+var selected;
+var editGrid;
+var iceColor = "rgb(229,244,255)";
 
 /*
  * A basic object that stores location and size
@@ -39,7 +42,7 @@ function BaseObject(row, col, width, height){
 }
 BaseObject.prototype.type = EMPTY;
 BaseObject.prototype.drawFn = function() {
-    ctx.fillStyle = "rgb(193,251,255)";
+    ctx.fillStyle = iceColor;
     ctx.fillRect(this.x, this.y + topbarSize, this.width, this.height);
 };
 BaseObject.prototype.reset = function() {
@@ -611,7 +614,7 @@ function GameLevel(timerDelay, rows, cols, pattern) {
     /* Clears the canvas and redraws all the objects */
     this.redrawAll = function() {
         ctx.clearRect(0, topbarSize, canvas.width, canvas.height-topbarSize);
-        ctx.fillStyle = "rgb(193,251,255)";
+        ctx.fillStyle = "rgb(229,244,255)";
         ctx.fillRect(0, topbarSize, canvas.width, canvas.height-topbarSize);
         /* SOME FUNCTION THAT DRAWS BG */
         this.blocks.forEach(function(block){
@@ -716,7 +719,7 @@ function updateTopbar(level){
         endGame();
         return;
     }
-    ctx.fillStyle = "yellow";
+    ctx.fillStyle = "rgb(193,228,255)";
     ctx.clearRect(0,0,canvas.width, topbarSize);
     ctx.fillRect(0,0,canvas.width, topbarSize);
     ctx.fillStyle = "black";
@@ -724,6 +727,163 @@ function updateTopbar(level){
     ctx.fillText("Lives: " + lives,0,40);
     ctx.fillText("Level: " + level, 300, 40);
 }
+
+function startScreen(){
+    ctx.fillStyle = "rgb(229,244,255)";
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.fillRect(0,0,canvas.width, canvas.height);
+    ctx.fillStyle = 'black';
+    ctx.fillText("Ice Cave", canvas.width/2, canvas.height/2);
+    ctx.fillText("A game inspired by Pokemon", canvas.width/2, canvas.height/2 + 50);
+    canvas.addEventListener('keydown', playGame, false);
+}
+
+function playGame(){
+    canvas.removeEventListener('keydown', playGame);
+    canvas.addEventListener('keydown', onKeyDown, false);
+    editGame();
+    //resetAll();
+}
+
+function editGame(){
+    var panelSize = 50;
+    topbarSize = 0;
+    editGrid = new Array(15);
+    for(var i = 0; i < editGrid.length; i++){
+        editGrid[i] = new Array(20);
+    }
+    canvas.width += panelSize;
+    canvas.height -= topbarSize;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = iceColor;
+    ctx.fillRect(0, 0, canvas.width-panelSize, canvas.height);
+    drawPanel(panelSize);
+    canvas.addEventListener('mousedown', pickBlock, false);
+}
+
+function drawPanel(panelSize){
+    ctx.fillStyle = "yellow";
+    ctx.fillRect(canvas.width-panelSize, 0, panelSize, canvas.height);
+    /* Draw blocks */
+    var pBlock = new PlayerObj(1.1, 20.1, cellSize, cellSize);
+    pBlock.drawFn();
+    
+    var bBlock = new BlockObj(3.1, 20.1, cellSize, cellSize);
+    bBlock.drawFn();
+    
+    var sBlock = new SlideObj(5.1, 20.1, cellSize, cellSize);
+    sBlock.drawFn();
+    
+    var boBlock = new BombObj(7.1, 20.1, cellSize, cellSize);
+    boBlock.drawFn();
+    
+    var fBlock = new FinishObj(9.1, 20.15, cellSize, cellSize);
+    fBlock.drawFn();
+    ctx.fillStyle = "black";
+    ctx.fillText("PLAY", canvas.width - panelSize + 10, 460);
+}
+
+function pickBlock(evt){
+    var x = evt.pageX - canvas.offsetLeft;
+    var y = evt.pageY - canvas.offsetTop;
+    var panelSize = 50;
+    if(x > 800 && x < 840){
+        if(y > 40 && y < 95){
+            drawPanel(panelSize);
+            ctx.fillStyle = "rgba(128,128,128,0.75)";
+            ctx.fillRect(canvas.width - panelSize, 40, panelSize, panelSize);
+            selected = 'player';
+        }else if(y > 120 && y < 175){
+            drawPanel(panelSize);
+            ctx.fillStyle = "rgba(128,128,128,0.75)";
+            ctx.fillRect(canvas.width - panelSize, 120, panelSize, panelSize);
+            selected = 'block';
+        }else if(y > 210 && y < 255){
+            drawPanel(panelSize);
+            ctx.fillStyle = "rgba(128,128,128,0.75)";
+            ctx.fillRect(canvas.width - panelSize, 210, panelSize, panelSize);
+            selected = 'slide';
+        }else if(y > 280 && y < 325){
+            drawPanel(panelSize);
+            ctx.fillStyle = "rgba(128,128,128,0.75)";
+            ctx.fillRect(canvas.width - panelSize, 280, panelSize, panelSize);
+            selected = 'bomb';
+        }else if (y > 360 && y < 405){
+            drawPanel(panelSize);
+            ctx.fillStyle = "rgba(128,128,128,0.75)";
+            ctx.fillRect(canvas.width - panelSize, 360, panelSize, panelSize);
+            selected = 'finish';
+        }else if (y > 445 && y < 465){
+            playEditedGame();
+        }
+    }
+    
+    if(x < 800){
+        var gridX, gridY;
+        if(selected !== null && selected !== undefined){
+            gridY = Math.floor(x/cellSize);
+            gridX = Math.floor(y/cellSize);
+            if(editGrid[gridX][gridY] !== undefined){
+                return;
+            }
+            switch(selected){
+                case 'player':{
+                    var p = new PlayerObj(gridX, gridY, cellSize, cellSize);
+                    p.drawFn();
+                    editGrid[gridX][gridY] = PLAYER;
+                    break;
+                }
+                case 'block':{
+                    var p = new BlockObj(gridX, gridY, cellSize, cellSize);
+                    p.drawFn();
+                    editGrid[gridX][gridY] = BLOCK;
+                    break;
+                }
+                case 'slide':{
+                    var p = new SlideObj(gridX, gridY, cellSize, cellSize);
+                    p.drawFn();
+                    editGrid[gridX][gridY] = SLIDE;
+                    break;
+                }
+                case 'bomb':{
+                    var p = new BombObj(gridX, gridY, cellSize, cellSize);
+                    p.drawFn();
+                    editGrid[gridX][gridY] = BOMB;
+                    break;
+                }
+                case 'finish':{
+                    var p = new FinishObj(gridX, gridY, cellSize, cellSize);
+                    p.drawFn();
+                    editGrid[gridX][gridY] = FINISH;
+                    break;
+                }
+            }
+        }
+    }
+}
+
+function playEditedGame(){
+    canvas.removeEventListener('mousedown',pickBlock);
+    canvas.width -= 50;
+    topbarSize = 50;
+    state = new GameState(10);
+    var editedLevel = new Array(15);
+    for(var i = 0; i < editGrid.length; i++){
+        var patternLevel = "";
+        for(var j = 0; j < editGrid[i].length; j++){
+            if(editGrid[i][j] === undefined){
+                patternLevel += EMPTY;
+            }else{
+                patternLevel += editGrid[i][j];
+            }
+        }
+        editedLevel[i] = patternLevel;
+    }
+    console.log(editedLevel);
+    state.addLevel(15, 20, editedLevel);
+    state.startGame();
+}
+
 
 /* This function ends the game and removes all key listeners */
 function endGame(){
@@ -746,7 +906,6 @@ function continueGame(event){
     clearInterval(state.drawInt);
     canvas.removeEventListener('keydown', continueGame);
     canvas.addEventListener('keydown', onKeyDown, false);
-    state = new GameState(10);
     resetAll();
 }
 
@@ -756,9 +915,8 @@ function onKeyDown(event) {
 
 
 // Create a new state and add level
-
-state = new GameState(10);
-    function resetAll(){
+function resetAll(){
+        state = new GameState(10);
         state.addLevel(15, 20, ["00200000000000000000",
                                 "02100a00000000000002",
                                 "00000000000000000000",
@@ -806,4 +964,4 @@ state = new GameState(10);
                                 "00000000220000000000"]);
         state.startGame();
 }
-resetAll();
+startScreen();
