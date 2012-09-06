@@ -635,9 +635,10 @@ function importPattern(level, pattern) {
  * Note that the players/blocks are stored in 2 data types: lists
  * of each respective object and a grid with their locations.
  */
-function GameLevel(timerDelay, rows, cols, pattern) {
+function GameLevel(timerDelay, rows, cols, pattern, title) {
     this.map = new GameMap(rows, cols);
     this.timerDelay = timerDelay;
+    this.title = title;
     // The types of objects stored in the game state
     // Used in [redraw,update]All to loop through all objects
     this.objTypes = ["players", "blocks"];
@@ -737,15 +738,15 @@ function GameState(timerDelay) {
     this.timerDelay = timerDelay;
     this.curLevel = -1;
     this.levels = new Array();
-    this.addLevel = function(rows, cols, pattern) {
-        this.levels.push(new GameLevel(this.timerDelay, rows, cols, pattern));
+    this.addLevel = function(rows, cols, pattern, title) {
+        this.levels.push(new GameLevel(this.timerDelay, rows, cols, pattern, title));
     };
     /* Clears the canvas and redraws all the objects */
     this.redrawAll = function(state) {
         if(this.curLevel === -1)
             return;
         this.levels[this.curLevel].redrawAll(state);
-        updateTopbar(this.curLevel);
+        updateTopbar(this);
     };
     /* Calls the update function on all the objects */
     this.updateAll = function(state) {
@@ -768,7 +769,9 @@ function GameState(timerDelay) {
 }
 
 /* Updates the top bar with level, and lives left */
-function updateTopbar(level){
+function updateTopbar(state){
+    var level = state.curLevel;
+    var title = state.levels[level].title;
     if(lives <= 0){
         endGame();
         return;
@@ -778,8 +781,10 @@ function updateTopbar(level){
     ctx.fillRect(0,0,canvas.width, topbarSize);
     ctx.fillStyle = "black";
     ctx.font = "40px Arial";
-    ctx.fillText("Lives: " + lives,0,40);
-    ctx.fillText("Level: " + level, 300, 40);
+    ctx.fillText("Lives: " + lives,400,40);
+    ctx.fillText("Level: " + level, 600, 40);
+    ctx.font = "bold 40px Arial";
+    ctx.fillText(title, 10, 40);
 }
 
 /* This function ends the game and removes all key listeners */
@@ -830,7 +835,8 @@ state = new GameState(10);
                                 "00002000000000000000",
                                 "00000000000000000000",
                                 "00000000000000000030",
-                                "00000000200000000000"]);
+                                "00000000200000000000"],
+                                "The Beginning");
         state.addLevel(15, 20, ["00200000000000000000",
                                 "02100a00000000000002",
                                 "00000000000000000000",
