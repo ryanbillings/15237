@@ -6,7 +6,6 @@
 var canvas = document.getElementById("myCanvas");
 canvas.setAttribute('tabindex', '0');
 canvas.focus();
-//canvas.addEventListener('keydown', onKeyDown, false);
 var ctx = canvas.getContext("2d");
 var types = {
     "EMPTY": 0,
@@ -897,6 +896,9 @@ function updateTopbar(state){
     ctx.fillText("Lives: " + lives, canvas.width - 70, 20);
 }
 
+/* This function draws the start screen and adds click listeners
+ * to either start the game or go to the level editor
+ */
 function startScreen(){
     ctx.fillStyle = "rgb(198,210,216)";
     ctx.clearRect(0,0,canvas.width,canvas.height);
@@ -936,7 +938,6 @@ function startScreen(){
     ctx.font = "25px Segoe UI";
     ctx.fillText("Create Level", canvas.width/2 + 5, canvas.height - 55);
     
-    
     ctx.restore();
     canvas.addEventListener('mousedown', chooseMode, false);
 }
@@ -956,15 +957,21 @@ function chooseMode(event){
     }
 }
 
+/* This function is called when a user clicks edit game on the start screen */
 function editGame(){
-    var panelSize = 50;
-    topbarSize = 0;
+    var panelSize = 50; // Set a side panel where a user can select a block
+    topbarSize = 0; // Remove the top score bar
+    
+    /* Create a grid containing anything placed down in the canvas */
     editGrid = new Array(15);
     for(var i = 0; i < editGrid.length; i++){
         editGrid[i] = new Array(20);
     }
+    
     canvas.width += panelSize;
     canvas.height -= topbarSize;
+    
+    // Reset the canvas to a blank map
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = iceColor;
     ctx.fillRect(0, 0, canvas.width-panelSize, canvas.height);
@@ -972,9 +979,13 @@ function editGame(){
     canvas.addEventListener('mousedown', pickBlock, false);
 }
 
+/* This function draws the side panel where a user can select
+ *  a block while creating a level
+ */
 function drawPanel(panelSize){
     ctx.fillStyle = "#C1E4FF";
     ctx.fillRect(canvas.width-panelSize, 0, panelSize, canvas.height);
+    
     /* Draw blocks */
     var pBlock = new PlayerObj(1.1, 20.1, cellSize, cellSize);
     pBlock.drawFn();
@@ -1022,51 +1033,57 @@ function roundedRect(ctx,x,y,width,height,radius){
     ctx.stroke();
 }
 
+/* This function allows a user to click on a block
+   while in the level creator. The block will highlight
+   and they can then place it on the canvas */
 function pickBlock(evt){
+    /* Get the mouse coordinates */
     var x = evt.pageX - canvas.offsetLeft;
     var y = evt.pageY - canvas.offsetTop;
     var panelSize = 50;
+    /* Check if the click was within the side panel */
     if(x > 800 && x < 840){
-        if(y > 35 && y < 85){
+        if(y > 35 && y < 85){ // Clicked on the penguin
             drawPanel(panelSize);
             ctx.fillStyle = "rgba(128,128,128,0.75)";
             ctx.fillRect(canvas.width - panelSize, 35, panelSize, panelSize);
             selected = 'player';
-        }else if(y > 120 && y < 170){
+        }else if(y > 120 && y < 170){ // Block
             drawPanel(panelSize);
             ctx.fillStyle = "rgba(128,128,128,0.75)";
             ctx.fillRect(canvas.width - panelSize, 120, panelSize, panelSize);
             selected = 'block';
-        }else if(y > 200 && y < 250){
+        }else if(y > 200 && y < 250){ // Slider
             drawPanel(panelSize);
             ctx.fillStyle = "rgba(128,128,128,0.75)";
             ctx.fillRect(canvas.width - panelSize, 200, panelSize, panelSize);
             selected = 'slide';
-        }else if(y > 280 && y < 330){
+        }else if(y > 280 && y < 330){ // Bomb
             drawPanel(panelSize);
             ctx.fillStyle = "rgba(128,128,128,0.75)";
             ctx.fillRect(canvas.width - panelSize, 280, panelSize, panelSize);
             selected = 'bomb';
-        }else if (y > 360 && y < 410){
+        }else if (y > 360 && y < 410){ // Finish
             drawPanel(panelSize);
             ctx.fillStyle = "rgba(128,128,128,0.75)";
             ctx.fillRect(canvas.width - panelSize, 360, panelSize, panelSize);
             selected = 'finish';
-        }else if (y > 440 && y < 490){
+        }else if (y > 440 && y < 490){ // Up Arrow
             drawPanel(panelSize);
             ctx.fillStyle = "rgba(128,128,128,0.75)";
             ctx.fillRect(canvas.width - panelSize, 440, panelSize, panelSize);
             selected = 'up';
-        }else if (y > 520 && y < 570){
+        }else if (y > 520 && y < 570){ // Right Arrow
             drawPanel(panelSize);
             ctx.fillStyle = "rgba(128,128,128,0.75)";
             ctx.fillRect(canvas.width - panelSize, 520, panelSize, panelSize);
             selected = 'right';
-        }else if (y > 600 && y < 650){
+        }else if (y > 600 && y < 650){ // Play button
             playEditedGame();
         }
     }
     
+    // If the user clicked somewhere in the canvas, place the selected block
     if(x < 800){
         var gridX, gridY;
         if(selected !== null && selected !== undefined){
@@ -1123,6 +1140,9 @@ function pickBlock(evt){
     }
 }
 
+/* This function will go through the edited map grid and convert to a pattern
+ * The pattern will then be added to a global variable, and run whenever the user
+ * starts a new game */
 function playEditedGame(){
     canvas.removeEventListener('mousedown',pickBlock);
     canvas.width -= 50;
@@ -1176,6 +1196,7 @@ function onKeyDown(event) {
 function resetAll(){
         state = new GameState(10);
         lives = 10;
+        // Check if an editedLevel was created. If it is, add it to the game
         if(editedLevel !== undefined && editedLevel !== null){
             state.addLevel(15,20,editedLevel, 'Custom Level');
         }
