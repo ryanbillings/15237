@@ -6,7 +6,6 @@
 var canvas = document.getElementById("myCanvas");
 canvas.setAttribute('tabindex', '0');
 canvas.focus();
-//canvas.addEventListener('keydown', onKeyDown, false);
 var ctx = canvas.getContext("2d");
 var types = {
     "EMPTY": 0,
@@ -102,10 +101,11 @@ BaseObject.prototype.update = function(state, tdelt) {
             (col >= cols || col < 0 || row >= rows || row < 0)){
             lives--;
             this.reset();
+            level.resetLevel();
         }
         if (this instanceof BlockObj){
-            if((this.dr !== 0 && (row >= rows-1 || row <= 0)) ||
-               (this.dc !== 0 && (col >= cols-1 || col <= 0)))
+            if((this.dr < 0 && row <= 0) || (this.dr > 0 && row >= rows-1) ||
+               (this.dc < 0 && col <= 0) || (this.dc > 0 && col >= cols-1))
             {
                 this.reset();
             }
@@ -574,6 +574,13 @@ BombObj.prototype.playerInteract = function(player, state){
         player.dc = 0;
         lives--;
         this.reset();
+        state.levels[state.curLevel].resetLevel();
+    }
+    else if(player.type === types.SLIDE) {
+        this.row = -1;
+        this.col = -1;
+        this.x = this.col*cellSize;
+        this.y = this.row*cellSize;
     }
 };
 
@@ -651,10 +658,14 @@ function GameMap(rows, cols){
                 }
             }
         }
-        state.levels[state.curLevel].blocks.forEach(function(obj){
+        var thisLevel = state.levels[state.curLevel];
+        thisLevel.blocks.forEach(function(obj){
             var row = obj.row;
             var col = obj.col;
-            that.grid[row][col] = obj;
+            var rows = that.rows;
+            var cols = that.cols;
+            if(row >= 0 && col >= 0 && row < rows && col < cols)
+                that.grid[row][col] = obj;
         });
     };
 }
@@ -750,6 +761,7 @@ function GameLevel(timerDelay, rows, cols, pattern, title) {
         self.map.grid[object.row][object.col] = object;
     };
     importPattern(this, pattern);
+    this.pattern = pattern;
     /* Clears the canvas and redraws all the objects */
     this.redrawAll = function() {
         ctx.clearRect(0, topbarSize, canvas.width, canvas.height-topbarSize);
@@ -773,12 +785,22 @@ function GameLevel(timerDelay, rows, cols, pattern, title) {
         }
         this.map.update(state);
     };
+    this.resetLevel = function(){
+        this.blocks = [];
+        this.players = [];
+        var rows = this.map.rows;
+        var cols = this.map.cols;
+        this.map = new GameMap(rows, cols);
+        importPattern(this, this.pattern);
+    };
     /* If the player is not moving, change the player's speed/direction */
     this.keyPress = function(code) {
         var lCode = 37;
         var rCode = 39;
         var uCode = 38;
         var dCode = 40;
+        var rKeyCode = 82;
+        var escCode = 27;
         var dr = 0;
         var dc = 0;
         switch(code) {
@@ -794,6 +816,16 @@ function GameLevel(timerDelay, rows, cols, pattern, title) {
             case dCode:
                 dr = 1;
                 break;
+            case rKeyCode:
+                for(var i = 0; i < this.players.length; i++){
+                    if(this.players[i].dr !== 0 || this.players[i].dc !== 0)
+                        return;
+                }
+                this.resetLevel();
+                return;
+            case escCode:
+                startScreen();
+                return;
         }
         var player;
         for (var i = 0; i < this.players.length; i++){
@@ -846,19 +878,32 @@ function GameState(timerDelay) {
     /* Starts the game by setting up the update/redraw intervals */
     this.startGame = function(curLevel) {
         this.curLevel = curLevel;
+        this.stop();
+        this.upInt = setInterval(function(){state.updateAll(state)}, state.timerDelay);
+        this.drawInt = setInterval(function(){state.redrawAll(state)}, state.timerDelay);
+    };
+    this.stop = function(){
         if(this.upInt !== undefined)
             clearInterval(this.upInt);
         if(this.drawInt !== undefined)
             clearInterval(this.drawInt);
-        this.upInt = setInterval(function(){state.updateAll(state)}, state.timerDelay);
-        this.drawInt = setInterval(function(){state.redrawAll(state)}, state.timerDelay);
     };
     this.keyPress = function(code) {
         if(this.curLevel === -1)
             return;
-        this.levels[this.curLevel].keyPress(code);
+        var plusCode = 221;
+        var minusCode = 219;
+        if(code === plusCode && this.curLevel < this.levels.length-1){
+            this.startGame(this.curLevel+1);
+        }
+        else if(code === minusCode && this.curLevel > 0){
+            this.startGame(this.curLevel-1);
+        }
+        else
+            this.levels[this.curLevel].keyPress(code);
     };
     this.nextLevel = function(){
+        this.levels[this.curLevel].resetLevel();
         this.startGame(this.curLevel+1);
     };
 }
@@ -884,6 +929,9 @@ function updateTopbar(state){
     ctx.fillText("Lives: " + lives, canvas.width - 70, 20);
 }
 
+/* This function draws the start screen and adds click listeners
+ * to either start the game or go to the level editor
+ */
 function startScreen(){
     ctx.fillStyle = "rgb(198,210,216)";
     ctx.clearRect(0,0,canvas.width,canvas.height);
@@ -923,9 +971,10 @@ function startScreen(){
     ctx.font = "25px Segoe UI";
     ctx.fillText("Create Level", canvas.width/2 + 5, canvas.height - 55);
     
-    
     ctx.restore();
     canvas.addEventListener('mousedown', chooseMode, false);
+    if(window.state !== undefined)
+        state.stop();
 }
 
 function chooseMode(event){
@@ -943,15 +992,21 @@ function chooseMode(event){
     }
 }
 
+/* This function is called when a user clicks edit game on the start screen */
 function editGame(){
-    var panelSize = 50;
-    topbarSize = 0;
+    var panelSize = 50; // Set a side panel where a user can select a block
+    topbarSize = 0; // Remove the top score bar
+    
+    /* Create a grid containing anything placed down in the canvas */
     editGrid = new Array(15);
     for(var i = 0; i < editGrid.length; i++){
         editGrid[i] = new Array(20);
     }
+    
     canvas.width += panelSize;
     canvas.height -= topbarSize;
+    
+    // Reset the canvas to a blank map
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = iceColor;
     ctx.fillRect(0, 0, canvas.width-panelSize, canvas.height);
@@ -959,9 +1014,13 @@ function editGame(){
     canvas.addEventListener('mousedown', pickBlock, false);
 }
 
+/* This function draws the side panel where a user can select
+ *  a block while creating a level
+ */
 function drawPanel(panelSize){
     ctx.fillStyle = "#C1E4FF";
     ctx.fillRect(canvas.width-panelSize, 0, panelSize, canvas.height);
+    
     /* Draw blocks */
     var pBlock = new PlayerObj(1.1, 20.1, cellSize, cellSize);
     pBlock.drawFn();
@@ -1009,51 +1068,57 @@ function roundedRect(ctx,x,y,width,height,radius){
     ctx.stroke();
 }
 
+/* This function allows a user to click on a block
+   while in the level creator. The block will highlight
+   and they can then place it on the canvas */
 function pickBlock(evt){
+    /* Get the mouse coordinates */
     var x = evt.pageX - canvas.offsetLeft;
     var y = evt.pageY - canvas.offsetTop;
     var panelSize = 50;
+    /* Check if the click was within the side panel */
     if(x > 800 && x < 840){
-        if(y > 35 && y < 85){
+        if(y > 35 && y < 85){ // Clicked on the penguin
             drawPanel(panelSize);
             ctx.fillStyle = "rgba(128,128,128,0.75)";
             ctx.fillRect(canvas.width - panelSize, 35, panelSize, panelSize);
             selected = 'player';
-        }else if(y > 120 && y < 170){
+        }else if(y > 120 && y < 170){ // Block
             drawPanel(panelSize);
             ctx.fillStyle = "rgba(128,128,128,0.75)";
             ctx.fillRect(canvas.width - panelSize, 120, panelSize, panelSize);
             selected = 'block';
-        }else if(y > 200 && y < 250){
+        }else if(y > 200 && y < 250){ // Slider
             drawPanel(panelSize);
             ctx.fillStyle = "rgba(128,128,128,0.75)";
             ctx.fillRect(canvas.width - panelSize, 200, panelSize, panelSize);
             selected = 'slide';
-        }else if(y > 280 && y < 330){
+        }else if(y > 280 && y < 330){ // Bomb
             drawPanel(panelSize);
             ctx.fillStyle = "rgba(128,128,128,0.75)";
             ctx.fillRect(canvas.width - panelSize, 280, panelSize, panelSize);
             selected = 'bomb';
-        }else if (y > 360 && y < 410){
+        }else if (y > 360 && y < 410){ // Finish
             drawPanel(panelSize);
             ctx.fillStyle = "rgba(128,128,128,0.75)";
             ctx.fillRect(canvas.width - panelSize, 360, panelSize, panelSize);
             selected = 'finish';
-        }else if (y > 440 && y < 490){
+        }else if (y > 440 && y < 490){ // Up Arrow
             drawPanel(panelSize);
             ctx.fillStyle = "rgba(128,128,128,0.75)";
             ctx.fillRect(canvas.width - panelSize, 440, panelSize, panelSize);
             selected = 'up';
-        }else if (y > 520 && y < 570){
+        }else if (y > 520 && y < 570){ // Right Arrow
             drawPanel(panelSize);
             ctx.fillStyle = "rgba(128,128,128,0.75)";
             ctx.fillRect(canvas.width - panelSize, 520, panelSize, panelSize);
             selected = 'right';
-        }else if (y > 600 && y < 650){
+        }else if (y > 600 && y < 650){ // Play button
             playEditedGame();
         }
     }
     
+    // If the user clicked somewhere in the canvas, place the selected block
     if(x < 800){
         var gridX, gridY;
         if(selected !== null && selected !== undefined){
@@ -1110,6 +1175,9 @@ function pickBlock(evt){
     }
 }
 
+/* This function will go through the edited map grid and convert to a pattern
+ * The pattern will then be added to a global variable, and run whenever the user
+ * starts a new game */
 function playEditedGame(){
     canvas.removeEventListener('mousedown',pickBlock);
     canvas.width -= 50;
@@ -1163,27 +1231,28 @@ function onKeyDown(event) {
 function resetAll(){
         state = new GameState(10);
         lives = 10;
+        // Check if an editedLevel was created. If it is, add it to the game
         if(editedLevel !== undefined && editedLevel !== null){
             state.addLevel(15,20,editedLevel, 'Custom Level');
         }
-        /* Empty Level */
-        state.addLevel(15, 20, ["10000020000000000000",
-                                "00000000000000000000",
-                                "00000a00000000600000",
-                                "00000000000000000000",
-                                "02000a00000000000000",
-                                "00000000000000000000",
-                                "6u0000000050000000000",
-                                "00000200000000000000",
+        /* Empty Level 
+        state.addLevel(15, 20, ["00000000000000000000",
                                 "00000000000000000000",
                                 "00000000000000000000",
                                 "00000000000000000000",
                                 "00000000000000000000",
                                 "00000000000000000000",
-                                "00000000000000000003",
+                                "00000000000000000000",
+                                "00000000000000000000",
+                                "00000000000000000000",
+                                "00000000000000000000",
+                                "00000000000000000000",
+                                "00000000000000000000",
+                                "00000000000000000000",
+                                "00000000000000000000",
                                 "00000000000000000000"],
                                 "");
-        
+        */
         /* Each new element introduced should have 3-5 levels devoted to it.
            1: (Relatively) trivial introduction level
            2: Puzzle using new element
@@ -1197,6 +1266,7 @@ function resetAll(){
            Sliding Blocks
            Direction Changers
            Portals
+           (OPT) Multiple players?
 
            Key:
            EMPTY  - 0
@@ -1208,6 +1278,7 @@ function resetAll(){
            SLIDE  - 6
            ARROW  - 7 (use the chars u, d, l, and r for arrows)
         */
+
         // Basic Blocks
         state.addLevel(15, 20, ["00000000000000000000",
                                 "02222222222222222220",
@@ -1240,7 +1311,7 @@ function resetAll(){
                                 "02000000000000000020",
                                 "02222222222222222220",
                                 "00000000000000000000"],
-                                "What? A Puzzle?");
+                                "Hit r if you get stuck. Hit esc if you're done.");
         state.addLevel(15, 20, ["00000000000000000000",
                                 "00000000300000000000",
                                 "00000000000000200000",
@@ -1307,8 +1378,156 @@ function resetAll(){
                                  "00000000000000200000"],
                                  "You Got That Boom Boom Pow.");
 
+        // Sliding Blocks
+        state.addLevel(15, 20, ["00000000000000000000",
+                                "00000000000000000000",
+                                "00001000000000000000",
+                                "00000000000000000000",
+                                "00000000000000000000",
+                                "00000000000000000000",
+                                "00006000000000002000",
+                                "00000000300000000000",
+                                "00000000000000000000",
+                                "00000000000000000000",
+                                "00000000000000000000",
+                                "00000000000000000000",
+                                "00000000000000000000",
+                                "00000000006000000020",
+                                "00000000000000000000"],
+                                "Give It a Shove");
+        state.addLevel(15, 20, ["05000000000000000000",
+                                "30000000000020000000",
+                                "20000000000000000000",
+                                "00000000000000000005",
+                                "02000000000000000000",
+                                "00000060000000000000",
+                                "00000000000000000000",
+                                "00000000000000600000",
+                                "00002006000000000000",
+                                "00000060000000002000",
+                                "00000200000000000000",
+                                "00000000000000000000",
+                                "00000000000600000100",
+                                "00000000000000000000",
+                                "00000000000000000000"],
+                                "To Push or Not To Push?");
+        state.addLevel(15, 20, ["00000000000030000000",
+                                "00000000002006000000",
+                                "00000000000200000000",
+                                "00220000060066602000",
+                                "00200000060060602000",
+                                "00260600000000000000",
+                                "00216020000000000000",
+                                "20060000000000000500",
+                                "00202000220220220000",
+                                "05222000060006006000",
+                                "00000000002000000000",
+                                "00000200006000000000",
+                                "00000006000620000000",
+                                "00000000000000000000",
+                                "00000002000000000000"],
+                                "Don't Get Stuck");
+        // Introduce Sliding blocks destroying bombs
+        state.addLevel(15, 20, ["00000000000000000000",
+                                "00000000000000020000",
+                                "00000000000020050000",
+                                "02000000050000600000",
+                                "00210000000000200000",
+                                "00000000000000000000",
+                                "00000000000000000000",
+                                "00000000000000000000",
+                                "00000000000000060000",
+                                "00050000000060002000",
+                                "00000000000002000000",
+                                "00030000000000000000",
+                                "00000000000000000000",
+                                "00000000000000000000",
+                                "00000000000000000000"],
+                                "Rock Paper Scissors Ice Bomb");
+        state.addLevel(15, 20, ["05500005500505005000",
+                                "00005005000006005502",
+                                "05500005500000005050",
+                                "00050200550250500000",
+                                "00550005000500020000",
+                                "00200000500000000000",
+                                "55005055655005505055",
+                                "55505556165550555525",
+                                "00000000655055505205",
+                                "02060000500000000002",
+                                "00050500500050000002",
+                                "00220000055000200050",
+                                "00500500500200000050",
+                                "05000005500505550553",
+                                "00055500500000005000"],
+                                "Clear a Path");
 
+        // Direction Changers
+        state.addLevel(15, 20, ["00000000000000000000",
+                                "00d000000000l0000000",
+                                "00000000000000000000",
+                                "0000000d0000000l0000",
+                                "00000000000000000000",
+                                "00000dl0000000000000",
+                                "00000r0030d000l00000",
+                                "00000000000000000000",
+                                "000000u000l000000000",
+                                "0000000r000000u00000",
+                                "00000000000212000000",
+                                "00000000000222000000",
+                                "00000000000000000000",
+                                "00r000000000000u0000",
+                                "00000000000000000000"],
+                                "What Do the Arrows Mean?");
+        state.addLevel(15, 20, ["00100000000000000000",
+                                "0000d000000000000l00",
+                                "000d000000000000l000",
+                                "000000000200000l0000",
+                                "00000000000000000000",
+                                "0000300000r000600002",
+                                "00052000000000000000",
+                                "000000000d0000000000",
+                                "00000000000000000000",
+                                "00000000000000000000",
+                                "00000000000000000000",
+                                "00r00200000000000000",
+                                "000000000000000u0000",
+                                "0000r000020000000000",
+                                "00000000r0000000u000"],
+                                "Take the Right Path. Or Maybe the Left One.");
+        state.addLevel(15, 20, ["00030000000000000000",
+                                "d00000000l0r00000020",
+                                "0000000000000d006000",
+                                "00000000000000000000",
+                                "02000000000000000000",
+                                "0600d00000000l000000",
+                                "62000000000000000000",
+                                "00000000002000000000",
+                                "00000000000000000r02",
+                                "200000000000d0000000",
+                                "00000000020000000000",
+                                "0000l000000000000000",
+                                "00000000000020000000",
+                                "00000000000200000000",
+                                "000000000u0060010000"],
+                                "Block Collector");
+        state.addLevel(15, 20, ["00200000000000000000",
+                                "02100000000000000000",
+                                "0200l00d00l00d00l000",
+                                "00000000000000000000",
+                                "00000000000000000000",
+                                "00000000000000000000",
+                                "00000000000000000000",
+                                "00000000000000000000",
+                                "020l0000000000000000",
+                                "00000000000000000000",
+                                "0000u00l00u00l000000",
+                                "00000000000000006003",
+                                "20000000000000000200",
+                                "00200000000000000000",
+                                "0r0u0000000000000000"],
+                                "Timing is Everything. Don't Be Late.");
 
+/////////
         state.addLevel(15, 20, ["22200000000000000000",
                                 "020106000a0000000000",
                                 "0200d0l0000a00000000",
