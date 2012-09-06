@@ -396,11 +396,40 @@ PortalObj.prototype.drawFn = function(){
 			intervalSize * (i + ((frame % 100)/100))
 		);
 		var alpha = 1 - ((rad / maxRad) * 1);
-		if (this.id !== "a") {
-			ctx.strokeStyle = "rgba(0, 128, 255, " + alpha + ")";
-		} else {
-			ctx.strokeStyle = "rgba(255, 64, 64, " + alpha + ")";
-		}
+        var hexStr = ''
+        switch(this.id){
+            case "a":
+                hexStr = "#B7410E";
+                break;
+            case "b":
+                hexStr = "#FF0000";
+                break;
+            case "c":
+                hexStr = "#0000FF";
+                break;
+            case "x":
+                hexStr = "#00FF00";
+                break;
+            case "e":
+                hexStr = "#00FFFF";
+                break;
+            case "f":
+                hexStr = "#FF00FF";
+                break;
+            case "g":
+                hexStr = "#FFFF00";
+                break;
+            case "h":
+                hexStr = "#000000";
+                break;
+            default:
+                hexStr = "#121212";
+                break;
+        }
+        var r = parseInt(hexStr.substring(1, 3), 16);
+        var g = parseInt(hexStr.substring(3, 5), 16);
+        var b = parseInt(hexStr.substring(5, 7), 16);
+        ctx.strokeStyle = "rgba(" + r + "," + g + "," + b + "," + alpha + ")";
 		ctx.beginPath();
 		ctx.arc(this.x + cellSize/2, this.y + topbarSize + cellSize/2,
 				rad, 0, 2*Math.PI, true);
@@ -922,8 +951,8 @@ function updateTopbar(state){
     ctx.fillRect(0,0,canvas.width, topbarSize);
     ctx.fillStyle = "black";
     ctx.font = "30px Segoe UI";
-    var levelMeasure = ctx.measureText("Level " + level);
-    ctx.fillText("Level " + level, 10, 35);
+    var levelMeasure = ctx.measureText("Level " + parseInt(level+1));
+    ctx.fillText("Level " + parseInt(level+1), 10, 35);
     ctx.fillText(" - " + title, 10+levelMeasure.width, 35);
     ctx.fillStyle = "rgb(240,121,2)";
     ctx.font = "16px Segoe UI";
