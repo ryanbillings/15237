@@ -612,26 +612,26 @@ FinishObj.prototype.constructor = FinishObj;
 FinishObj.prototype.type = types.FINISH;
 FinishObj.prototype.drawFn = function(){
     ctx.fillStyle = "#F2F2F2";
-    ctx.strokeStyle = "#D9D9D9";
+    ctx.strokeStyle = "gray";
     ctx.save();
-    ctx.lineWidth = '2';
+    ctx.lineWidth = '1';
     ctx.beginPath();
-    ctx.arc(this.x + cellSize/2, this.y + topbarSize + cellSize/2, cellSize/2+3, Math.PI-.1, 2*Math.PI+.1, false);
+    ctx.arc(this.x + cellSize/2, this.y + topbarSize + cellSize/2 + 5, cellSize/2+4, Math.PI-.1, 2*Math.PI+.1, false);
     ctx.closePath();     
     ctx.fill();
     ctx.stroke();
      
     ctx.beginPath();
-    ctx.arc(this.x+3, this.y + topbarSize + cellSize/2, 11, Math.PI-.1, 2*Math.PI+.1, false);
+    ctx.arc(this.x+4, this.y + topbarSize + cellSize/2 + 6, 11, Math.PI-.1, 2*Math.PI+.1, false);
     ctx.closePath();     
     ctx.fill();
     ctx.stroke();
-    ctx.fillStyle = "black";
+    ctx.fillStyle = "gray";
     ctx.beginPath();
-    ctx.arc(this.x+3, this.y + topbarSize + cellSize/2, 8, Math.PI-.1, 2*Math.PI+.1, false);
+    ctx.arc(this.x+4, this.y + topbarSize + cellSize/2 + 6, 6, Math.PI-.1, 2*Math.PI+.1, false);
     ctx.closePath();     
     ctx.fill();
-    ctx.stroke();
+    //ctx.stroke();
     ctx.restore();
 };
 /* This stops the player */
@@ -1174,13 +1174,13 @@ function pickBlock(evt){
                 case 'up':{
                     var p = new ArrowObj(gridX, gridY, cellSize, cellSize, "u");
                     p.drawFn();
-                    editGrid[gridX][gridY] = types.FINISH;
+                    editGrid[gridX][gridY] = "u";
                     break;
                 }
                 case 'right':{
                     var p = new ArrowObj(gridX, gridY, cellSize, cellSize, "r");
                     p.drawFn();
-                    editGrid[gridX][gridY] = types.FINISH;
+                    editGrid[gridX][gridY] = "r";
                     break;
                 }
             }
