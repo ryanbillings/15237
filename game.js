@@ -38,7 +38,7 @@ var charToObj = {
 var cellSize = 40;
 var slideSpeed = 20; //blocks per second
 var topbarSize = 50;
-var lives = 3;
+var lives = 10;
 var selected;
 var editGrid;
 var editedLevel;
@@ -95,7 +95,6 @@ BaseObject.prototype.update = function(state, tdelt) {
        a block. If it is, interact with that block */
     if(this instanceof PlayerObj || this instanceof BlockObj){
         // Reset the object if it has gone off the screen
-
         if (this instanceof PlayerObj && 
             (col >= cols || col < 0 || row >= rows || row < 0)){
             lives--;
@@ -111,7 +110,9 @@ BaseObject.prototype.update = function(state, tdelt) {
         if(this.row >= 0 && this.row < rows && this.col >= 0 && this.col < cols) {
             var nBlock = level.map.grid[this.row][this.col];
             if(nBlock !== undefined && onBlocks.indexOf(nBlock.type) !== -1){
-                nBlock.playerInteract(this);
+                nBlock.playerInteract(this, state);
+                if(nBlock.type === types.FINISH)
+                    return;
             }
         }
         var nextRow = this.row + this.dr;
@@ -119,7 +120,7 @@ BaseObject.prototype.update = function(state, tdelt) {
         if(nextRow >= 0 && nextRow < rows && nextCol >= 0 && nextCol < cols) {
             var nBlock = level.map.grid[nextRow][nextCol];
             if(nBlock !== undefined && blocks.indexOf(nBlock.type) !== -1)
-                nBlock.playerInteract(this);
+                nBlock.playerInteract(this, state);
         }
     }
 };
@@ -531,13 +532,15 @@ BombObj.prototype.drawFn = function(){
     
 };
 /* This kills the player */
-BombObj.prototype.playerInteract = function(player){
-    player.x = player.startCol*cellSize;
-    player.y = player.startRow*cellSize;
-    player.dr = 0;
-    player.dc = 0;
-    lives--;
-    this.reset();
+BombObj.prototype.playerInteract = function(player, state){
+    if(player.type === types.PLAYER) {
+        player.x = player.startCol*cellSize;
+        player.y = player.startRow*cellSize;
+        player.dr = 0;
+        player.dc = 0;
+        lives--;
+        this.reset();
+    }
 };
 
 
@@ -580,11 +583,7 @@ FinishObj.prototype.drawFn = function(){
 /* This stops the player */
 FinishObj.prototype.playerInteract = function(player){
     if(player.type === types.PLAYER) {
-        state.curLevel++;
-        player.dr = 0;
-        player.dc = 0;
-        player.x = player.col*cellSize;
-        player.y = player.row*cellSize;
+        state.nextLevel();
     }
 };
 
@@ -807,8 +806,12 @@ function GameState(timerDelay) {
     };
     var state = this;
     /* Starts the game by setting up the update/redraw intervals */
-    this.startGame = function() {
-        this.curLevel = 0;
+    this.startGame = function(curLevel) {
+        this.curLevel = curLevel;
+        if(this.upInt !== undefined)
+            clearInterval(this.upInt);
+        if(this.drawInt !== undefined)
+            clearInterval(this.drawInt);
         this.upInt = setInterval(function(){state.updateAll(state)}, state.timerDelay);
         this.drawInt = setInterval(function(){state.redrawAll(state)}, state.timerDelay);
     };
@@ -816,7 +819,10 @@ function GameState(timerDelay) {
         if(this.curLevel === -1)
             return;
         this.levels[this.curLevel].keyPress(code);
-    }
+    };
+    this.nextLevel = function(){
+        this.startGame(this.curLevel+1);
+    };
 }
 
 /* Updates the top bar with level, and lives left */
@@ -837,7 +843,7 @@ function updateTopbar(state){
     ctx.fillText(" - " + title, 10+levelMeasure.width, 35);
     ctx.fillStyle = "rgb(240,121,2)";
     ctx.font = "16px Segoe UI";
-    ctx.fillText("Lives: " + lives, canvas.width - 60, 20);
+    ctx.fillText("Lives: " + lives, canvas.width - 70, 20);
 }
 
 function startScreen(){
@@ -1087,6 +1093,149 @@ function resetAll(){
         if(editedLevel !== undefined && editedLevel !== null){
             state.addLevel(15,20,editedLevel, 'Custom Level');
         }
+        /* Empty Level
+        state.addLevel(15, 20, ["00000000000000000000",
+                                "00000000000000000000",
+                                "00000000000000000000",
+                                "00000000000000000000",
+                                "00000000000000000000",
+                                "00000000000000000000",
+                                "00000000000000000000",
+                                "00000000000000000000",
+                                "00000000000000000000",
+                                "00000000000000000000",
+                                "00000000000000000000",
+                                "00000000000000000000",
+                                "00000000000000000000",
+                                "00000000000000000000",
+                                "00000000000000000000"],
+                                "");
+        */
+        /* Each new element introduced should have 3-5 levels devoted to it.
+           1: (Relatively) trivial introduction level
+           2: Puzzle using new element
+           3: Tricky puzzle using new element
+           4(opt): Integrate element with other elements (med difficulty)
+           5: Hard integrated puzzle
+           
+           Elements should be introduced in this order:
+           Basic Blocks
+           Bombs
+           Sliding Blocks
+           Direction Changers
+           Portals
+
+           Key:
+           EMPTY  - 0
+           PLAYER - 1
+           BLOCK  - 2
+           FINISH - 3
+           PORTAL - 4 (use matching chars for matching portals (a-z)
+           BOMB   - 5
+           SLIDE  - 6
+           ARROW  - 7 (use the chars u, d, l, and r for arrows)
+        */
+        // Basic Blocks
+        state.addLevel(15, 20, ["00000000000000000000",
+                                "02222222222222222220",
+                                "02000000000000000020",
+                                "02010000000000000020",
+                                "02000000000000000020",
+                                "02000000000000000020",
+                                "02000000000000000020",
+                                "02000000000000000020",
+                                "02000000000000000320",
+                                "02000000000000000020",
+                                "02000000000000000020",
+                                "02000000000000000020",
+                                "02000000000000000020",
+                                "02222222222222222220",
+                                "00000000000000000000"],
+                                "Get to the Igloo. Use Thy Arrow Keys.");
+        state.addLevel(15, 20, ["00000000000000000000",
+                                "02222222222222222220",
+                                "02200000000000000020",
+                                "02000000000000000020",
+                                "02010000000000200020",
+                                "02020000000000000020",
+                                "02030000000000000020",
+                                "02000000000000000020",
+                                "02000000000000000020",
+                                "02200000000000000020",
+                                "02000000000002000020",
+                                "02000000000000000020",
+                                "02000000000000000020",
+                                "02222222222222222220",
+                                "00000000000000000000"],
+                                "What? A Puzzle?");
+        state.addLevel(15, 20, ["00000000000000000000",
+                                "00000000300000000000",
+                                "00000000000000200000",
+                                "00020000000200000200",
+                                "00000000000000000000",
+                                "00000200000000000000",
+                                "00000000000020000200",
+                                "00000000000000000000",
+                                "00020000020000000000",
+                                "00000020000000000020",
+                                "00000000000000000000",
+                                "00000000000000000000",
+                                "00000000010000020000",
+                                "00020000000000000000",
+                                "00000000000000000000"],
+                                "Watch Your Step");
+        // Bombs
+        state.addLevel(15, 20, ["00000000006666000000",
+                                "00000000555500600000",
+                                "00000555555500060000",
+                                "00055000005500006000",
+                                "00553000000550006000",
+                                "00500001000250000000",
+                                "05000000000005000000",
+                                "05000000000005000000",
+                                "05000000000005000000",
+                                "05000000000005000000",
+                                "05000000000005000000",
+                                "00520000000050000000",
+                                "00550000002550000000",
+                                "00055000005500000000",
+                                "00000555550000000000"],
+                                "Don't Explode!");
+        state.addLevel(15, 20, ["00000000500000000002",
+                                "02002500000000200000",
+                                "00000000020000000002",
+                                "00000000000000000200",
+                                "00000000000000000000",
+                                "50200000000000000000",
+                                "20020000010000000000",
+                                "00000000003005000000",
+                                "00000000000000002020",
+                                "00000005000200000000",
+                                "00002000000000000000",
+                                "02000000000000020000",
+                                "00000000200000500000",
+                                "00000005000000000000",
+                                "00000000000000000000"],
+                                "So Close, Yet So Far");
+        state.addLevel(15, 20, ["00000030000200000000", 
+                                 "20000000000020000000", 
+                                 "00200000000000500000", 
+                                 "00000000000000000200", 
+                                 "00000005002000000002", 
+                                 "20000000000005000000", 
+                                 "00000000000000005000", 
+                                 "00000000000000000000",
+                                 "00000000000200000000", 
+                                 "00020000000000210020",
+                                 "00050200000050000000",
+                                 "02000000002000000000",
+                                 "00000000000052000000",
+                                 "00000000000000000200",
+                                 "00000000000000200000"],
+                                 "You Got That Boom Boom Pow.");
+
+
+
         state.addLevel(15, 20, ["22200000000000000000",
                                 "020106000a0000000000",
                                 "0200d0l0000a00000000",
@@ -1148,6 +1297,6 @@ function resetAll(){
                                 "00000000000000000000",
                                 "00000000000000000030",
                                 "00000000220000000000"]);
-        state.startGame();
+        state.startGame(0);
 }
 startScreen();
