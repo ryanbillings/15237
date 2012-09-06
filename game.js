@@ -101,6 +101,7 @@ BaseObject.prototype.update = function(state, tdelt) {
             (col >= cols || col < 0 || row >= rows || row < 0)){
             lives--;
             this.reset();
+            level.resetLevel();
         }
         if (this instanceof BlockObj){
             if((this.dr !== 0 && (row >= rows-1 || row <= 0)) ||
@@ -586,6 +587,13 @@ BombObj.prototype.playerInteract = function(player, state){
         player.dc = 0;
         lives--;
         this.reset();
+        state.levels[state.curLevel].resetLevel();
+    }
+    else if(player.type === types.SLIDE) {
+        this.row = -1;
+        this.col = -1;
+        this.x = this.col*cellSize;
+        this.y = this.row*cellSize;
     }
 };
 
@@ -663,10 +671,14 @@ function GameMap(rows, cols){
                 }
             }
         }
-        state.levels[state.curLevel].blocks.forEach(function(obj){
+        var thisLevel = state.levels[state.curLevel];
+        thisLevel.blocks.forEach(function(obj){
             var row = obj.row;
             var col = obj.col;
-            that.grid[row][col] = obj;
+            var rows = that.rows;
+            var cols = that.cols;
+            if(row >= 0 && col >= 0 && row < rows && col < cols)
+                that.grid[row][col] = obj;
         });
     };
 }
@@ -762,6 +774,7 @@ function GameLevel(timerDelay, rows, cols, pattern, title) {
         self.map.grid[object.row][object.col] = object;
     };
     importPattern(this, pattern);
+    this.pattern = pattern;
     /* Clears the canvas and redraws all the objects */
     this.redrawAll = function() {
         ctx.clearRect(0, topbarSize, canvas.width, canvas.height-topbarSize);
@@ -785,12 +798,22 @@ function GameLevel(timerDelay, rows, cols, pattern, title) {
         }
         this.map.update(state);
     };
+    this.resetLevel = function(){
+        this.blocks = [];
+        this.players = [];
+        var rows = this.map.rows;
+        var cols = this.map.cols;
+        this.map = new GameMap(rows, cols);
+        importPattern(this, this.pattern);
+    };
     /* If the player is not moving, change the player's speed/direction */
     this.keyPress = function(code) {
         var lCode = 37;
         var rCode = 39;
         var uCode = 38;
         var dCode = 40;
+        var rKeyCode = 82;
+        var escCode = 27;
         var dr = 0;
         var dc = 0;
         switch(code) {
@@ -806,6 +829,16 @@ function GameLevel(timerDelay, rows, cols, pattern, title) {
             case dCode:
                 dr = 1;
                 break;
+            case rKeyCode:
+                for(var i = 0; i < this.players.length; i++){
+                    if(this.players[i].dr !== 0 || this.players[i].dc !== 0)
+                        return;
+                }
+                this.resetLevel();
+                return;
+            case escCode:
+                startScreen();
+                return;
         }
         var player;
         for (var i = 0; i < this.players.length; i++){
@@ -858,12 +891,15 @@ function GameState(timerDelay) {
     /* Starts the game by setting up the update/redraw intervals */
     this.startGame = function(curLevel) {
         this.curLevel = curLevel;
+        this.stop();
+        this.upInt = setInterval(function(){state.updateAll(state)}, state.timerDelay);
+        this.drawInt = setInterval(function(){state.redrawAll(state)}, state.timerDelay);
+    };
+    this.stop = function(){
         if(this.upInt !== undefined)
             clearInterval(this.upInt);
         if(this.drawInt !== undefined)
             clearInterval(this.drawInt);
-        this.upInt = setInterval(function(){state.updateAll(state)}, state.timerDelay);
-        this.drawInt = setInterval(function(){state.redrawAll(state)}, state.timerDelay);
     };
     this.keyPress = function(code) {
         if(this.curLevel === -1)
@@ -940,6 +976,8 @@ function startScreen(){
     
     ctx.restore();
     canvas.addEventListener('mousedown', chooseMode, false);
+    if(window.state !== undefined)
+        state.stop();
 }
 
 function chooseMode(event){
@@ -1200,24 +1238,24 @@ function resetAll(){
         if(editedLevel !== undefined && editedLevel !== null){
             state.addLevel(15,20,editedLevel, 'Custom Level');
         }
-        /* Empty Level */
-        state.addLevel(15, 20, ["10000020000000000000",
-                                "00000000000000000000",
-                                "00000a00000000600000",
-                                "00000000000000000000",
-                                "02000a00000000000000",
-                                "00000000000000000000",
-                                "6u0000000050000000000",
-                                "00000200000000000000",
+        /* Empty Level 
+        state.addLevel(15, 20, ["00000000000000000000",
                                 "00000000000000000000",
                                 "00000000000000000000",
                                 "00000000000000000000",
                                 "00000000000000000000",
                                 "00000000000000000000",
-                                "00000000000000000003",
+                                "00000000000000000000",
+                                "00000000000000000000",
+                                "00000000000000000000",
+                                "00000000000000000000",
+                                "00000000000000000000",
+                                "00000000000000000000",
+                                "00000000000000000000",
+                                "00000000000000000000",
                                 "00000000000000000000"],
                                 "");
-        
+        */
         /* Each new element introduced should have 3-5 levels devoted to it.
            1: (Relatively) trivial introduction level
            2: Puzzle using new element
@@ -1231,6 +1269,7 @@ function resetAll(){
            Sliding Blocks
            Direction Changers
            Portals
+           (OPT) Multiple players?
 
            Key:
            EMPTY  - 0
@@ -1242,6 +1281,7 @@ function resetAll(){
            SLIDE  - 6
            ARROW  - 7 (use the chars u, d, l, and r for arrows)
         */
+
         // Basic Blocks
         state.addLevel(15, 20, ["00000000000000000000",
                                 "02222222222222222220",
@@ -1274,7 +1314,7 @@ function resetAll(){
                                 "02000000000000000020",
                                 "02222222222222222220",
                                 "00000000000000000000"],
-                                "What? A Puzzle?");
+                                "Hit r if you get stuck. Hit esc if you're done.");
         state.addLevel(15, 20, ["00000000000000000000",
                                 "00000000300000000000",
                                 "00000000000000200000",
@@ -1341,6 +1381,88 @@ function resetAll(){
                                  "00000000000000200000"],
                                  "You Got That Boom Boom Pow.");
 
+        // Sliding Blocks
+        state.addLevel(15, 20, ["00000000000000000000",
+                                "00000000000000000000",
+                                "00001000000000000000",
+                                "00000000000000000000",
+                                "00000000000000000000",
+                                "00000000000000000000",
+                                "00006000000000002000",
+                                "00000000300000000000",
+                                "00000000000000000000",
+                                "00000000000000000000",
+                                "00000000000000000000",
+                                "00000000000000000000",
+                                "00000000000000000000",
+                                "00000000006000000020",
+                                "00000000000000000000"],
+                                "Give It a Shove");
+        state.addLevel(15, 20, ["05000000000000000000",
+                                "30000000000020000000",
+                                "20000000000000000000",
+                                "00000000000000000005",
+                                "02000000000000000000",
+                                "00000060000000000000",
+                                "00000000000000000000",
+                                "00000000000000600000",
+                                "00002006000000000000",
+                                "00000060000000002000",
+                                "00000200000000000000",
+                                "00000000000000000000",
+                                "00000000000600000100",
+                                "00000000000000000000",
+                                "00000000000000000000"],
+                                "To Push or Not To Push?");
+        state.addLevel(15, 20, ["00000000000000000000",
+                                "00000000002300000000",
+                                "00000000000200000000",
+                                "00220000060066602000",
+                                "00200000060060602000",
+                                "00260600000000000000",
+                                "00216020000000000000",
+                                "20060000000000000500",
+                                "00202000220220220000",
+                                "05222000060006006000",
+                                "00000000002000000000",
+                                "00000200006000000000",
+                                "00000006000620000000",
+                                "00000000000000000000",
+                                "00000002000000000000"],
+                                "Don't Get Stuck");
+        // Introduce Sliding blocks destroying bombs
+        state.addLevel(15, 20, ["00000000000000000000",
+                                "00000000000000020000",
+                                "00000000000020050000",
+                                "02000000050000600000",
+                                "00210000000000200000",
+                                "00000000000000000000",
+                                "00000000000000000000",
+                                "00000000000000000000",
+                                "00000000000000060000",
+                                "00050000000060002000",
+                                "00000000000002000000",
+                                "00030000000000000000",
+                                "00000000000000000000",
+                                "00000000000000000000",
+                                "00000000000000000000"],
+                                "Rock Paper Scissors Ice Bomb");
+        state.addLevel(15, 20, ["05500005500505005000",
+                                "00005005000006005502",
+                                "05500005500000005050",
+                                "00050200550250500000",
+                                "00550005000500020000",
+                                "00200000500000000000",
+                                "55005055655005505055",
+                                "55505556165550555525",
+                                "00000000655055505205",
+                                "02060000500000000002",
+                                "00050500500050000002",
+                                "00220000055000200050",
+                                "00500500500200000050",
+                                "05000005500505550553",
+                                "00055500500000005000"],
+                                "Clear a Path");
 
 
         state.addLevel(15, 20, ["22200000000000000000",
