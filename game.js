@@ -418,21 +418,68 @@ ArrowObj.prototype = new BaseObject();
 ArrowObj.prototype.constructor = ArrowObj;
 ArrowObj.prototype.type = types.ARROW;
 ArrowObj.prototype.drawFn = function(){
+    ctx.strokeStyle = "green";
     switch(this.dir){
         case "u":
-            ctx.fillStyle = "#FF0000";
+            ctx.beginPath();
+            ctx.moveTo(this.x, this.y + topbarSize + cellSize);
+            ctx.lineTo(this.x + cellSize/2, this.y + cellSize/2 + topbarSize);
+            ctx.lineTo(this.x+cellSize, this.y+ topbarSize + cellSize);
+            ctx.closePath();
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(this.x, this.y + topbarSize + cellSize/2);
+            ctx.lineTo(this.x + cellSize/2, this.y + topbarSize);
+            ctx.lineTo(this.x + cellSize, this.y+ topbarSize + cellSize/2);
+            ctx.closePath();
+            ctx.stroke();
             break;
         case "d":
-            ctx.fillStyle = "#00FF00";
+            ctx.beginPath();
+            ctx.moveTo(this.x, this.y + topbarSize);
+            ctx.lineTo(this.x + cellSize/2, this.y + cellSize/2 + topbarSize);
+            ctx.lineTo(this.x+cellSize, this.y+ topbarSize);
+            ctx.closePath();
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(this.x, this.y + topbarSize + cellSize/2);
+            ctx.lineTo(this.x + cellSize/2, this.y + cellSize + topbarSize);
+            ctx.lineTo(this.x + cellSize, this.y+ topbarSize + cellSize/2);
+            ctx.closePath();
+            ctx.stroke();
             break;
         case "l":
-            ctx.fillStyle = "#0000FF";
+            ctx.beginPath();
+            ctx.moveTo(this.x+cellSize, this.y + topbarSize);
+            ctx.lineTo(this.x + cellSize/2, this.y + cellSize/2 + topbarSize);
+            ctx.lineTo(this.x+cellSize, this.y+ topbarSize + cellSize);
+            ctx.closePath();
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(this.x + cellSize/2, this.y + topbarSize);
+            ctx.lineTo(this.x, this.y + cellSize/2 + topbarSize);
+            ctx.lineTo(this.x + cellSize/2, this.y+ topbarSize + cellSize);
+            ctx.closePath();
+            ctx.stroke();
             break;
         case "r":
-            ctx.fillStyle = "#FFFF00";
+            ctx.beginPath();
+            ctx.moveTo(this.x, this.y + topbarSize);
+            ctx.lineTo(this.x + cellSize/2, this.y + cellSize/2 + topbarSize);
+            ctx.lineTo(this.x, this.y+ topbarSize + cellSize);
+            ctx.closePath();
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(this.x + cellSize/2, this.y + topbarSize);
+            ctx.lineTo(this.x + cellSize, this.y + cellSize/2 + topbarSize);
+            ctx.lineTo(this.x + cellSize/2, this.y+ topbarSize + cellSize);
+            ctx.closePath();
+            ctx.stroke();
+            //ctx.fillStyle = "#FFFF00";
             break;
     }
-    ctx.fillRect(this.x, this.y+topbarSize, this.width, this.height);
+    //ctx.strokeStyle = "gray";
+    //ctx.strokeRect(this.x, this.y+topbarSize, this.width, this.height);
 };
 /* Change the player's direction */
 ArrowObj.prototype.playerInteract = function(player){
