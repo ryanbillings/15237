@@ -942,21 +942,24 @@ function GameState(timerDelay) {
 function updateTopbar(state){
     var level = state.curLevel;
     var title = state.levels[level].title;
-//    if(lives <= 0){
-//        endGame();
-//        return;
-//    }
     ctx.fillStyle = "rgb(193,228,255)";
     ctx.clearRect(0,0,canvas.width, topbarSize);
     ctx.fillRect(0,0,canvas.width, topbarSize);
     ctx.fillStyle = "black";
     ctx.font = "30px Segoe UI";
-    var levelMeasure = ctx.measureText("Level " + parseInt(level+1));
-    ctx.fillText("Level " + parseInt(level+1), 10, 35);
-    ctx.fillText(" - " + title, 10+levelMeasure.width, 35);
-    ctx.fillStyle = "rgb(240,121,2)";
-    ctx.font = "16px Segoe UI";
-    ctx.fillText("Deaths: " + deaths, canvas.width - 70, 20);
+    if(title !== "---winlevel---"){
+        var levelMeasure = ctx.measureText("Level " + parseInt(level+1));
+        ctx.fillText("Level " + parseInt(level+1), 10, 35);
+        ctx.fillText(" - " + title, 10+levelMeasure.width, 35);
+        ctx.fillStyle = "rgb(240,121,2)";
+        ctx.font = "16px Segoe UI";
+        ctx.fillText("Deaths: " + deaths, canvas.width - 70, 20);
+    }
+    else{
+        var str = "You died " + deaths + " times. Hit esc to try again!"; 
+        var levelMeasure = ctx.measureText(str);
+        ctx.fillText(str, (canvas.width - levelMeasure.width)/2, 35);
+    }
 }
 
 /* This function draws the start screen and adds click listeners
@@ -1626,10 +1629,10 @@ function resetAll(){
         state.addLevel(15, 20, ["a666666666666666666b",
                                 "60000000000000000006",
                                 "60000000000000001006",
-                                "62020222202002000006",
-                                "62020210202002000006",
-                                "60200200202002000006",
-                                "60200222202222000006",
+                                "62020rrrd02002000006",
+                                "62020u10d02002000006",
+                                "60200u00d02002000006",
+                                "60200ulll02222000006",
                                 "60000000000000000026",
                                 "60020002022202002026",
                                 "60021002002102202026",
@@ -1638,7 +1641,7 @@ function resetAll(){
                                 "60000000000000000006",
                                 "60000000000000000006",
                                 "e666666666666666666c"],
-                                "");
+                                "---winlevel---");
 
 /*
         state.addLevel(15, 20, ["22200000000000000000",
