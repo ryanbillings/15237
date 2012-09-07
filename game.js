@@ -1308,7 +1308,6 @@ function resetAll(){
            SLIDE  - 6
            ARROW  - 7 (use the chars u, d, l, and r for arrows)
         */
-
         // Basic Blocks
         state.addLevel(15, 20, ["00000000000000000000",
                                 "02222222222222222220",
@@ -1623,6 +1622,24 @@ function resetAll(){
                                 "53xu0lr00u05005550uh"],
                                 "A Lot Harder Than It Looks");
 
+        // Win Screen
+        state.addLevel(15, 20, ["a666666666666666666b",
+                                "60000000000000000006",
+                                "60000000000000001006",
+                                "62020222202002000006",
+                                "62020210202002000006",
+                                "60200200202002000006",
+                                "60200222202222000006",
+                                "60000000000000000026",
+                                "60020002022202002026",
+                                "60021002002102202026",
+                                "60020202002002022006",
+                                "60002020022202002026",
+                                "60000000000000000006",
+                                "60000000000000000006",
+                                "e666666666666666666c"],
+                                "");
+
 /*
         state.addLevel(15, 20, ["22200000000000000000",
                                 "020106000a0000000000",
@@ -1688,60 +1705,3 @@ function resetAll(){
         state.startGame(0);
 }
 startScreen();
-
-
-
-
-
-/*
-PortalObj.prototype.drawFn = function(){
-    ctx.fillStyle = "purple";
-    for(var i = 2; i < 6; i++){
-        switch(i){
-            case 2:
-                ctx.fillStyle = "#3B0C49";
-                break;
-            case 3:
-                ctx.fillStyle = "#2D282E";
-                break;
-            case 4:
-                ctx.fillStyle = "#A4A4A4";
-                break;
-            case 5:
-                switch(this.id){
-                    case "a":
-                        ctx.fillStyle = "#FFFFFF";
-                        break;
-                    case "b":
-                        ctx.fillStyle = "#FF0000";
-                        break;
-                    case "c":
-                        ctx.fillStyle = "#0000FF";
-                        break;
-                    case "x":
-                        ctx.fillStyle = "#00FF00";
-                        break;
-                    case "e":
-                        ctx.fillStyle = "#00FFFF";
-                        break;
-                    case "f":
-                        ctx.fillStyle = "#FF00FF";
-                        break;
-                    case "g":
-                        ctx.fillStyle = "#FFFF00";
-                        break;
-                    case "h":
-                        ctx.fillStyle = "#000000";
-                        break;
-                }
-                break;
-        }
-        ctx.beginPath();
-        ctx.arc(this.x+cellSize/2, this.y+topbarSize+cellSize/2, cellSize/(i), 0, 2*Math.PI, true);
-        //ctx.stroke();
-        ctx.fill();
-        ctx.closePath();
-    }
-    
-    
-};*/
