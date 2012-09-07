@@ -451,6 +451,7 @@ PortalObj.prototype.playerInteract = function(player){
 function ArrowObj(row, col, width, height, dir){
     BaseObject.call(this, row, col, width, height);
     this.dir = dir;
+    this.color = "#00ffff";
     var pdr = 0;
     var pdc = 0;
     switch(dir){
@@ -473,9 +474,28 @@ function ArrowObj(row, col, width, height, dir){
 ArrowObj.prototype = new BaseObject();
 ArrowObj.prototype.constructor = ArrowObj;
 ArrowObj.prototype.type = types.ARROW;
+ArrowObj.prototype.drawArrow = function(angle){
+    ctx.save();
+    ctx.beginPath();
+    ctx.rotate(angle);
+    ctx.moveTo(this.x, this.y + topbarSize + cellSize);
+    ctx.lineTo(this.x + cellSize/2, this.y + cellSize/2 + topbarSize);
+    ctx.lineTo(this.x+cellSize, this.y + topbarSize + cellSize);
+    ctx.closePath();
+    ctx.stroke();
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(this.x, this.y + topbarSize + cellSize/2);
+    ctx.lineTo(this.x + cellSize/2, this.y + topbarSize);
+    ctx.lineTo(this.x + cellSize, this.y+ topbarSize + cellSize/2);
+    ctx.closePath();
+    ctx.stroke();
+    ctx.fill();
+    ctx.restore();
+}
 ArrowObj.prototype.drawFn = function(){
     ctx.strokeStyle = "#0099CC";
-    ctx.fillStyle = "#00ffff";
+    ctx.fillStyle = this.color;
     switch(this.dir){
         case "u":
             ctx.beginPath();
@@ -540,14 +560,17 @@ ArrowObj.prototype.drawFn = function(){
             ctx.closePath();
             ctx.stroke();
             ctx.fill();
-            //ctx.fillStyle = "#FFFF00";
             break;
     }
-    //ctx.strokeStyle = "gray";
-    //ctx.strokeRect(this.x, this.y+topbarSize, this.width, this.height);
 };
 /* Change the player's direction */
 ArrowObj.prototype.playerInteract = function(player){
+    this.color = "yellow";
+    setTimeout((function(that){
+        return function () {
+            that.color = "#00ffff";
+           };
+          })(this), 250);
     if(this.pdr !== 0){
         player.dr = this.pdr;
         player.dc = 0;
@@ -956,7 +979,7 @@ function updateTopbar(state){
     ctx.fillText(" - " + title, 10+levelMeasure.width, 35);
     ctx.fillStyle = "rgb(240,121,2)";
     ctx.font = "16px Segoe UI";
-    ctx.fillText("Deaths: " + deaths, canvas.width - 70, 20);
+    ctx.fillText("Deaths: " + deaths, canvas.width - 100, 20);
 }
 
 /* This function draws the start screen and adds click listeners
