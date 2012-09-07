@@ -29,6 +29,7 @@ var charToObj = {
     "4": PortalObj,
     "5": BombObj,
     "6": SlideObj,
+    "8": PlayerObj,
     "u": ArrowObj,
     "d": ArrowObj,
     "l": ArrowObj,
@@ -132,9 +133,13 @@ BaseObject.prototype.update = function(state, tdelt) {
  * The player (inherits from BaseObject)
  * It has a different type and draw function.
  */
-function PlayerObj(row, col, width, height){
+function PlayerObj(row, col, width, height, id){
     BaseObject.call(this, row, col, width, height);
 	this.imageIndex = 0;
+    if(id === "8")
+        this.shadow = true;
+    else
+        this.shadow = false;
 };
 PlayerObj.prototype = new BaseObject();
 PlayerObj.prototype.constructor = PlayerObj;
@@ -147,11 +152,21 @@ PlayerObj.prototype.drawFn = function(){
 	} else {
 		yAnimOffset = 2;
 	}
-	
+    var white, black, orange;
+    if(this.shadow){
+    	white = "rgba(255,255,255,.3)";
+        black = "rgba(0,0,0,.3)";
+        orange = "rgba(254, 152, 2, .3)";
+    }
+    else{
+        white = "white";
+        black = "black";
+        orange = "rgba(254, 152, 2)";
+    }
     var adjustedY = this.y + topbarSize;
     function body(ctx, cx, cy, radius) {
-        ctx.fillStyle = "white";
-        ctx.strokeStyle = "black";
+        ctx.fillStyle = white;
+        ctx.strokeStyle = black;
         ctx.beginPath();
         ctx.arc(cx, cy+5 + yAnimOffset, radius, 0, 2*Math.PI, true);
         ctx.fill();
@@ -160,7 +175,7 @@ PlayerObj.prototype.drawFn = function(){
     }
     
     function head(ctx, cx, cy, height, width) {        
-		ctx.fillStyle = "black";
+		ctx.fillStyle = black;
 		ctx.beginPath();
 		ctx.arc(cx+width/2, cy + 12 + yAnimOffset, height/3, 0, 2*Math.PI, true);
 		ctx.stroke();
@@ -169,7 +184,7 @@ PlayerObj.prototype.drawFn = function(){
     }
     
     function eyes(ctx, cx, cy, width){
-        ctx.fillStyle = "white";
+        ctx.fillStyle = white;
         // Left Eye
         ctx.save();
         ctx.translate(cx, cy);
@@ -181,7 +196,7 @@ PlayerObj.prototype.drawFn = function(){
         ctx.closePath();
         ctx.restore();
         
-        ctx.fillStyle = "black";
+        ctx.fillStyle = black;
         ctx.save();
         ctx.translate(cx, cy);
         ctx.scale(.9, 1);
@@ -192,7 +207,7 @@ PlayerObj.prototype.drawFn = function(){
         ctx.closePath();
         ctx.restore();
         
-        ctx.fillStyle = "white";
+        ctx.fillStyle = white;
         // Right eye
         ctx.save();
         ctx.translate(cx, cy);
@@ -204,7 +219,7 @@ PlayerObj.prototype.drawFn = function(){
         ctx.closePath();
         ctx.restore();
         
-        ctx.fillStyle = "black";
+        ctx.fillStyle = black;
         ctx.save();
         ctx.translate(cx, cy);
         ctx.scale(.9, 1);
@@ -215,7 +230,6 @@ PlayerObj.prototype.drawFn = function(){
         ctx.closePath();
         ctx.restore();
     }
-    
     function nose(ctx, cx, cy){
         ctx.fillStyle = "#FE9802";
         ctx.beginPath();
@@ -243,8 +257,8 @@ PlayerObj.prototype.drawFn = function(){
     }
     
     function arms(ctx, cx, cy){
-        ctx.fillStyle = "black";
-        ctx.strokeStyle = "white";
+        ctx.fillStyle = black;
+        ctx.strokeStyle = white;
         ctx.save();
         ctx.translate(cx, cy);
         ctx.rotate(3*(Math.PI/4));
@@ -1646,7 +1660,7 @@ function resetAll(){
                                 "5dle0000500000555050",
                                 "500000d00g00f05q50rd",
                                 "53xu0lr00u05005550uh"],
-                                "A Lot Harder Than It Looks");
+                                "A Lot \"Harder\" Than It Looks");
 
         // Win Screen
         state.addLevel(15, 20, ["a666666666666666666b",
@@ -1656,10 +1670,10 @@ function resetAll(){
                                 "62020u10d02002000006",
                                 "60200u00d02002000006",
                                 "60200ulll02222000006",
-                                "60000000000000000026",
+                                "60010000000000000026",
                                 "60020002022202002026",
-                                "60021002002102202026",
-                                "60020202002002022006",
+                                "60020002002102202026",
+                                "60020302002002022006",
                                 "60002020022202002026",
                                 "60000000000000000006",
                                 "60000000000000000006",
