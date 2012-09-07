@@ -466,19 +466,28 @@ function ArrowObj(row, col, width, height, dir){
     BaseObject.call(this, row, col, width, height);
     this.dir = dir;
     this.color = "#00ffff";
+    this.originalColor = "#00ffff";
     var pdr = 0;
     var pdc = 0;
     switch(dir){
         case "u":
+            this.color = "#38D845";
+            this.originalColor = "#38D845";
             pdr = -1;
             break;
         case "d":
+            this.color = "#00ffff";
+            this.originalColor = "#00ffff";
             pdr = 1;
             break;
         case "l":
+            this.color = "#38D888";
+            this.originalColor = "#38D888";
             pdc = -1;
             break;
         case "r":
+            this.color = "#3895D8";
+            this.originalColor = "#3895D8";
             pdc = 1;
             break;
     }
@@ -508,7 +517,8 @@ ArrowObj.prototype.drawArrow = function(angle){
     ctx.restore();
 }
 ArrowObj.prototype.drawFn = function(){
-    ctx.strokeStyle = "#0099CC";
+    //ctx.strokeStyle = "#0099CC";
+    ctx.strokeStyle = "white";
     ctx.fillStyle = this.color;
     switch(this.dir){
         case "u":
@@ -579,12 +589,12 @@ ArrowObj.prototype.drawFn = function(){
 };
 /* Change the player's direction */
 ArrowObj.prototype.playerInteract = function(player){
-    this.color = "yellow";
     setTimeout((function(that){
         return function () {
-            that.color = "#00ffff";
+            that.color = that.originalColor;
            };
           })(this), 250);
+    this.color = "yellow";
     if(this.pdr !== 0){
         player.dr = this.pdr;
         player.dc = 0;
