@@ -969,14 +969,14 @@ function updateTopbar(state){
     ctx.clearRect(0,0,canvas.width, topbarSize);
     ctx.fillRect(0,0,canvas.width, topbarSize);
     ctx.fillStyle = "black";
-    ctx.font = "30px Segoe UI";
+    ctx.font = "26px Segoe UI";
     if(title !== "---winlevel---"){
         var levelMeasure = ctx.measureText("Level " + parseInt(level+1));
         ctx.fillText("Level " + parseInt(level+1), 10, 35);
         ctx.fillText(" - " + title, 10+levelMeasure.width, 35);
         ctx.fillStyle = "rgb(240,121,2)";
         ctx.font = "16px Segoe UI";
-        ctx.fillText("Deaths: " + deaths, canvas.width - 70, 20);
+        ctx.fillText("Deaths: " + deaths, canvas.width - 90, 20);
     }
     else{
         var str = "You died " + deaths + " times. Hit esc to try again!"; 
