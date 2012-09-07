@@ -34,5 +34,19 @@ R - Restart the level
 *While this game works on all HTML5 Browsers, some people have experienced slow gameplay on Firefox.
 To get the maximum speed out of the game, play on Chrome.
 
+
+15237 Concepts Applied
+
+This game uses Object-Oriented Design in many ways. From a high level standpoint:
+- We use a GameState object which contains information about the entire state of the game.
+- The GameState contains multiple levels, which are also their own objects.
+- Each type of block on a level is an object. These items all inherit from BaseObject, which contains generic data such as position and speed.
+
+All of the items and levels are drawn on the canvas using functions that we learned in class.
+We make use of lines, shapes, arcs, curves and text on the canvas.
+
+Mouse listeners are used within the start screen and the create level mode.
+Keyboard listeners are used while controlling the penguin throughout the game.
+
 Enjoy!!
 
